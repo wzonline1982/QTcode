@@ -20,6 +20,7 @@ class Ui_MyWidget
 {
 public:
     QPushButton *pushButton;
+    QWidget *subwidget;
 
     void setupUi(QWidget *MyWidget)
     {
@@ -28,7 +29,10 @@ public:
         MyWidget->resize(640, 480);
         pushButton = new QPushButton(MyWidget);
         pushButton->setObjectName(QStringLiteral("pushButton"));
-        pushButton->setGeometry(QRect(400, 40, 75, 23));
+        pushButton->setGeometry(QRect(480, 40, 75, 23));
+        subwidget = new QWidget(MyWidget);
+        subwidget->setObjectName(QStringLiteral("subwidget"));
+        subwidget->setGeometry(QRect(20, 120, 401, 341));
 
         retranslateUi(MyWidget);
 
