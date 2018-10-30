@@ -27,11 +27,15 @@ CONFIG += c++11
 SOURCES += \
         main.cpp \
         mywidget.cpp \
-    subwin.cpp
+    subwin.cpp \
+    binwin.cpp
+
 
 HEADERS += \
         mywidget.h \
-    subwin.h
+    subwin.h \
+    binwin.h
+
 
 FORMS += \
         mywidget.ui

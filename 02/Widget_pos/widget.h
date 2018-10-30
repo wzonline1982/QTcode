@@ -36,11 +36,15 @@ public:
     explicit Widget(QWidget *parent = nullptr);
     ~Widget();
 
+
 private:
     Ui::Widget *ui;
 
+    int paintx=20;
+    int painty=50;
     QPixmap pix; //全局变量保存绘制的图片
     QPixmap tempPix; //辅助画布
+    QPixmap paintEventPix; //辅助画布
 
     QPoint lastPoint; //保存鼠标上一个值
     QPoint endPoint; //保存鼠标上一个值
@@ -48,8 +52,8 @@ private:
     qreal scale;
 
     QString filename;
-    bool isDrawing;  //标志是否正在绘图
-    bool isDrag;
+    bool isDrag;  //标志是否正在绘图
+    bool isMousemMove;
 
 
 protected:
