@@ -2,27 +2,13 @@
 #define WIDGET_H
 
 #include <QWidget>
-#include <QMouseEvent>
-#include <QDragEnterEvent>
-#include <QMimeData>
-#include <QDropEvent>
-#include <QPushButton>
-#include <QUrl>
-
-#include <QFileInfo>
-#include <QFile>
-#include <QFileDialog>
-#include <QMessageBox>
-#include <QDir>
-#include <QString>
-
-#include <QDialog>
-#include <QImage>
 #include <QPixmap>
 #include <QPainter>
 #include <QPaintEvent>
-#include <QScreen>
-#include <QGuiApplication>
+
+#include <QDragEnterEvent>
+#include <QMimeData>
+#include <QDropEvent>
 
 namespace Ui {
 class Widget;
@@ -40,21 +26,18 @@ private:
     Ui::Widget *ui;
 
     QPixmap pix; //全局变量保存绘制的图片
-    QPixmap tempPix; //辅助画布
-
     QPoint lastPoint; //保存鼠标上一个值
     QPoint endPoint; //保存鼠标上一个值
 
     qreal scale;
-
-    QString filename;
+    QPixmap tempPix; //辅助画布
     bool isDrawing;  //标志是否正在绘图
+    QString filename;
     bool isDrag;
-
 
 protected:
     /**********重写事件响应的虚函数****************/
-    void mouseMoveEvent(QMouseEvent *m);
+    void mouseMoveEvent(QMouseEvent *event);
     void mousePressEvent(QMouseEvent *event);
     void mouseReleaseEvent(QMouseEvent *event);
 
@@ -63,9 +46,6 @@ protected:
     void dropEvent(QDropEvent *event);
 
     void paintEvent(QPaintEvent *event);
-
-private slots:
-    void on_pushButton_clicked();
 };
 
 #endif // WIDGET_H
