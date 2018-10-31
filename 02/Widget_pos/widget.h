@@ -54,6 +54,7 @@ private:
     QString filename;
     bool isDrag;  //标志是否正在绘图
     bool isMousemMove;
+    bool isBackInit;
 
 
 protected:

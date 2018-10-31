@@ -1,5 +1,6 @@
 #include "widget.h"
 #include "ui_widget.h"
+#include <QPalette>
 #include <QDebug>
 
 Widget::Widget(QWidget *parent) :
@@ -9,6 +10,9 @@ Widget::Widget(QWidget *parent) :
     ui->setupUi(this);
 
     this->setAcceptDrops(true);//设置窗口启用拖动
+
+    isBackInit = true;
+    update();
 }
 
 Widget::~Widget()
@@ -135,5 +139,14 @@ void Widget::paintEvent(QPaintEvent *event)
        painter.drawPixmap(paintx,painty,pix.width(),pix.height(),paintEventPix); //绘制载入图片
        painter.end();
        isDrag = false;
+    }
+
+
+    if(isBackInit == true)
+    {
+        painter.begin(this);
+        painter.fillRect(this->rect(),QColor(255,57,57)); // 填充背景色
+        painter.end();
+        isBackInit = false;
     }
 }
