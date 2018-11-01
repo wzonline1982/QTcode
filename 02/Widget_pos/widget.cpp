@@ -11,7 +11,7 @@ Widget::Widget(QWidget *parent) :
 
     this->setAcceptDrops(true);//设置窗口启用拖动
 
-    isBackInit = true;
+    isDraw = 1; //绘制画布背景
     update();
 }
 
@@ -32,7 +32,7 @@ void Widget::mouseMoveEvent(QMouseEvent *m)
         endPoint.setY(y-painty);
 
         qDebug() << endPoint ;
-        isMousemMove = true;
+        isDraw = 3;
         update();
     }
 
@@ -85,18 +85,18 @@ void Widget::dragEnterEvent(QDragEnterEvent *event){
        event->ignore();//否则不接受鼠标事件
 }
 
-
+//拖入图片
 void Widget::dropEvent(QDropEvent *event)
 {
     const QMimeData *qm=event->mimeData();//获取MIMEData
     filename = qm->urls()[0].toLocalFile().toStdString().data();
     pix.load(filename);  //加载图片
     paintEventPix = pix.copy(0,0,pix.width(),pix.height());  //考贝图片
-    isDrag = true;
+    isDraw = 2;
     update();            //触发画图
 }
 
-//pushButton event
+//pushButton event 打开图片
 void Widget::on_pushButton_clicked()
 {
     QString fileName = QFileDialog::getOpenFileName(this,tr("选择图像"),"",tr("Images (*.png *.bmp *.jpg)"));
@@ -106,7 +106,7 @@ void Widget::on_pushButton_clicked()
         {
            pix.load(fileName.toLatin1().data());//加载图片
            paintEventPix = pix.copy(0,0,pix.width(),pix.height());  //考贝图片
-           isDrag = true;
+           isDraw = 2;
            update();                            //触发画图
         }
 }
@@ -117,7 +117,15 @@ void Widget::paintEvent(QPaintEvent *event)
     Q_UNUSED(event);
     QPainter painter;   //只能有一个绘图设备
 
-    if(isMousemMove == true && !pix.isNull())
+    if(isDraw == 1)
+    {
+        painter.begin(this);
+        QRect rect(paintx,painty,720,512);
+        painter.fillRect(rect,QColor(88,88,88)); // 填充背景色
+        painter.end();
+    }
+
+   if(isDraw == 3 && !pix.isNull())
     {
         tempPix = pix.copy(0,0,pix.width(),pix.height());  //考贝图片至画布
         painter.begin(&tempPix);
@@ -130,23 +138,12 @@ void Widget::paintEvent(QPaintEvent *event)
         painter.begin(this);  //切换绘图设备
         painter.drawPixmap(paintx,painty,pix.width(),pix.height(),paintEventPix); //绘制载入图片
         painter.end();
-        isMousemMove = false;
     }
 
-    if(isDrag == true)
+    if(isDraw == 2)
     {
        painter.begin(this);
        painter.drawPixmap(paintx,painty,pix.width(),pix.height(),paintEventPix); //绘制载入图片
        painter.end();
-       isDrag = false;
-    }
-
-
-    if(isBackInit == true)
-    {
-        painter.begin(this);
-        painter.fillRect(this->rect(),QColor(255,57,57)); // 填充背景色
-        painter.end();
-        isBackInit = false;
     }
 }

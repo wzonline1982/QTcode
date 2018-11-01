@@ -24,6 +24,16 @@
 #include <QScreen>
 #include <QGuiApplication>
 
+#include "cv.h"
+#include "cxcore.h"
+#include "highgui.hpp"
+#include <opencv2/highgui/highgui.hpp>
+#include <opencv2/imgproc/imgproc.hpp>
+#include <iostream>
+
+using namespace cv;
+using namespace std;
+
 namespace Ui {
 class Widget;
 }
@@ -49,13 +59,15 @@ private:
     QPoint lastPoint; //保存鼠标上一个值
     QPoint endPoint; //保存鼠标上一个值
 
-    qreal scale;
+    QImage *image;
+    Mat img;
+    Mat thr;
 
     QString filename;
-    bool isDrag;  //标志是否正在绘图
-    bool isMousemMove;
-    bool isBackInit;
+
     int isDraw;
+
+
 
 
 protected:
@@ -72,6 +84,8 @@ protected:
 
 private slots:
     void on_pushButton_clicked();
+    void on_pushButton_2_clicked();
+    void on_pushButton_3_clicked();
 };
 
 #endif // WIDGET_H
