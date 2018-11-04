@@ -147,3 +147,30 @@ void Widget::paintEvent(QPaintEvent *event)
        painter.end();
     }
 }
+
+double Widget::Correl(double *basedata,double *checkData,int N)
+{
+    double sumX = 0.0;
+    double sumY = 0.0;
+    double sumX_Sq = 0.0;
+    double sumY_Sq = 0.0;
+    double sumXY = 0.0;
+    if (NULL != basedata && NULL != checkData){
+        for (int i = 0; i < N; i++ ){
+            if ( (NULL != basedata[i]) && (NULL != checkData[i])){
+                sumX +=  basedata[i];
+                sumY += checkData[i];
+                sumX_Sq += pow(basedata[i],2); //求平方
+                sumY_Sq += pow(checkData[i],2);
+                sumXY += basedata[i]*checkData[i];
+                }
+            }
+     }
+     double numerator = sumXY - sumX * sumY / N;
+     double denominator = sqrt((sumX_Sq - sumX * sumX / N) * (sumY_Sq - sumY * sumY / N));
+     // 分母不能为0
+     if (denominator == 0) {
+                  return 0.0;
+      }
+     return numerator / denominator;
+}

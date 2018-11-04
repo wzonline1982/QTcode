@@ -36,10 +36,12 @@ public:
     explicit Widget(QWidget *parent = nullptr);
     ~Widget();
 
+    double Correl(double *basedata,double *checkData,int N);
 
 private:
     Ui::Widget *ui;
 
+    double baseData[8];
     int paintx=20;
     int painty=50;
     QPixmap pix; //全局变量保存绘制的图片

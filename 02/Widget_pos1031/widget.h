@@ -16,6 +16,8 @@
 #include <QDir>
 #include <QString>
 
+#include <QListView>
+#include <QTextBrowser>
 #include <QDialog>
 #include <QImage>
 #include <QPixmap>
@@ -27,6 +29,7 @@
 #include "cv.h"
 #include "cxcore.h"
 #include "highgui.hpp"
+#include <opencv2/opencv.hpp>
 #include <opencv2/highgui/highgui.hpp>
 #include <opencv2/imgproc/imgproc.hpp>
 #include <iostream>
@@ -46,10 +49,14 @@ public:
     explicit Widget(QWidget *parent = nullptr);
     ~Widget();
 
+    void Roi_Mat(uchar* data,Mat src, Rect rect);
+    double Correl(double *basedata,double *checkData,int N);
+    Point getRotatePoint(double angle,Point center,int x ,int y);
 
 private:
     Ui::Widget *ui;
 
+    double baseData[8];
     int paintx=20;
     int painty=50;
     QPixmap pix; //全局变量保存绘制的图片
@@ -62,10 +69,17 @@ private:
     QImage *image;
     Mat img;
     Mat thr;
+    Mat Orimg;
+    Mat RatRoil; //较正后的图
 
     QString filename;
 
-    int isDraw;
+    int isDraw; //绘图模式
+
+    Point topl,topr;
+
+    QTextBrowser TextBrowser_2;
+    QListView    listView;
 
 
 
@@ -86,6 +100,10 @@ private slots:
     void on_pushButton_clicked();
     void on_pushButton_2_clicked();
     void on_pushButton_3_clicked();
+    void on_radioButton_clicked(bool checked);
+    void on_radioButton_2_clicked(bool checked);
+    void on_pushButton_4_clicked();
+    void on_pushButton_5_clicked();
 };
 
 #endif // WIDGET_H
