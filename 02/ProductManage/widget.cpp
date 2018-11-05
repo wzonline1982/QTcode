@@ -6,6 +6,12 @@
 #include <QStringListModel>
 #include <QFile>
 #include <QTextCodec>
+#include <stdlib.h>
+#include <stdio.h>
+
+#include <iostream>
+//#include <cstring>
+#include <string>
 
 #include <QDebug>
 
@@ -16,22 +22,39 @@ Widget::Widget(QWidget *parent) :
 {
     ui->setupUi(this);
 
-    //指定为GBK  combox 初始化
-    QTextCodec *codec = QTextCodec::codecForName("GBK");
-    //打开文件
-    QFile file("./test.txt");
-    if (file.open(QIODevice::ReadOnly | QIODevice::Text))
-    {
-        while (!file.atEnd())
+    //初始化combox
+    QDir dir = QCoreApplication::applicationDirPath()+ "/data/";  //当前目录下的文件夹data下的文件
+    dir.setFilter(QDir::Files | QDir::Hidden | QDir::NoSymLinks);
+          dir.setSorting(QDir::Size | QDir::Reversed);
+
+    QFileInfoList list = dir.entryInfoList();
+    for (int i = 0; i < list.size(); ++i) {
+        QFileInfo fileInfo = list.at(i);
+        if(fileInfo.suffix() == "xls")  //筛选后缀为xls的文件导入combox
         {
-            QByteArray line = file.readLine();
-            QString str = codec->toUnicode(line);
-            str = str.trimmed();
-            qDebug()<< str;
-            ui->comboBox->addItem(str);   //combox 初始化
+           ui->comboBox->addItem(fileInfo.baseName());
         }
-        file.close();
+//             qDebug() << qPrintable(QString("%1 %2").arg(fileInfo.size(), 10).arg(fileInfo.fileName()));
+//             qDebug()<<fileInfo.suffix();
     }
+//---------------------------------------------------------------------------
+
+    //指定为GBK  combox 初始化
+//    QTextCodec *codec = QTextCodec::codecForName("GBK");
+//    //打开文件
+//    QFile file("./test.txt");
+//    if (file.open(QIODevice::ReadOnly | QIODevice::Text))
+//    {
+//        while (!file.atEnd())
+//        {
+//            QByteArray line = file.readLine();
+//            QString str = codec->toUnicode(line);
+//            str = str.trimmed();
+//            qDebug()<< str;
+//            ui->comboBox->addItem(str);   //combox 初始化
+//        }
+//        file.close();
+//    }
     //------------------------------------
 /*
     //combox 初始化
@@ -45,19 +68,27 @@ Widget::Widget(QWidget *parent) :
     ui->comboBox->addItem("G");
 */
  //   openFile("E:/qt_work/build-ProductManage-Desktop_Qt_5_11_2_MinGW_32bit-Debug/123.xls");
-    openFile("./123.xls");
+    //fileName = QCoreApplication::applicationDirPath();
+   // fileName = fileName+ "/data/" +"123"+".xls";
+
     //初始化 listview
     QStringList num;
-    num<<QString("0")<<QString("1")<<QString("2")<<QString("3");
+ //   num<<QString(" "); //初始化一行，必需有数据
     QStringListModel *model = new QStringListModel(num);
     ui->listView->setModel(model);
     ui->listView->setEditTriggers(QAbstractItemView::NoEditTriggers);//设置不可编缉
 
-    int row_num =  ui->listView->model()->rowCount();
-    qDebug()<< row_num;
+    /* listview 数据操作示例*/
+  //  qDebug()<< "打印初始化行数量" << ui->listView->model()->rowCount();
     // row_idx为该行索引序号, column_idx为该列索引序号,两者都以0开始
-    QString str = ui->listView->model()->index(0, 2).data().toString();
-    qDebug()<< str;
+    //----------------------------------row_idx -- column_idx
+ //   qDebug()<<"打印选定内容区域" << ui->listView->model()->index(1, 0).data().toString();
+ //  ui->listView->model()->removeRow(1.0);  //删除row.col 先行再列 0 起始
+ //   ui->listView->model()->insertRow(0);
+ //   ui->listView->model()->setData(ui->listView->model()->index(0,0),"33333333");
+//   QVariant data = ui->listView->model()->data(ui->listView->model()->index(0,0));
+ //   qDebug() << data.toInt() ;
+
     //---------------------------------------
 
     //radioButton
@@ -69,9 +100,20 @@ Widget::Widget(QWidget *parent) :
     GroupRadio_3.addButton(ui->radioButton_4);
 
     ui->radioButton->setChecked(true);
-    int select = GroupRadio_2.checkedId();
-    qDebug()<< select;
+    fileHead.serialctl = 1;
+
+    //初始化progressBar
+    ui->progressBar->setValue(0);
     //--------------------------------
+
+    /*初始化 noteList */
+    noteList = (NoteList*) malloc(sizeof(NoteList));
+    noteList->listHeader =(char*)  malloc(sizeof(char)*100);
+    for (int i =0; i<100;i++)
+    {
+        noteList->cur[i] = (Cur*)  malloc(sizeof(Cur));
+        noteList->cur[i]->noteFeature = (int*)  malloc(sizeof(int)*100);
+    }
 }
 
 Widget::~Widget()
@@ -83,10 +125,21 @@ Widget::~Widget()
 
 void Widget::on_listView_clicked(const QModelIndex &index)
 {
-    qDebug()<<index.row();
-    QModelIndex INDEX=ui->listView->currentIndex();
-    qDebug()<<INDEX;
-//    ui->listView->model()->removeRow();
+    //ui->comboBox->Items[2].ToString();
+      qDebug()<<"当前行序号"<<index.row();
+      int indexRow = index.row();
+      QVariant data = ui->listView->model()->data(ui->listView->model()->index(indexRow,0)); //取当前行0列数据
+      QString viewText = data.toString(); //转字符串
+
+      int i;
+      for( i=0;i<100;i++)
+      {
+
+      }
+
+//    QModelIndex INDEX=ui->listView->currentIndex();
+ //   qDebug()<<INDEX;
+ //   ui->listView->model()->removeRow();
 //    model->insertRows(c_rowlistview-1,1)；//插入一行
 //    model->removeRow(c_rowlistview+1);//删除一行
 //    model->setData((model->index(c_rowlistview-1,0)),model->index(c_rowlistview+1,0).data().toString())//赋值，注意index（）第二个参数设置成0，否则赋值不成功
@@ -96,14 +149,53 @@ void Widget::on_listView_clicked(const QModelIndex &index)
 //添加 button
 void Widget::on_pushButton_clicked()
 {
-    qDebug()<<ui->comboBox->currentIndex()<<ui->comboBox->currentText(); //获取当前索引和文本
+    //qDebug()<<QCoreApplication::applicationDirPath(); //打印当前路径
+    //qDebug()<<"当前combox"<<ui->comboBox->currentIndex()<<ui->comboBox->currentText(); //获取当前索引和文本
+    int comboxIndex = ui->comboBox->currentIndex();  //当前序号
+    int rowCount = ui->listView->model()->rowCount(); //行数
+    QString comboxText = ui->comboBox->currentText(); //当前内容
+    int row = ui->listView->currentIndex().row();
+    qDebug()<<"combox序号"<< comboxIndex;
+    qDebug()<<"row"<< row;
+    qDebug()<<"rowCount"<< rowCount;
+
+    QString ListStr;
+    int flag = 0;
+    //查询是否有重复项
+    for (int i = 0; i < rowCount;i++ )  //rowCount 最小值1
+    {
+       ListStr = ui->listView->model()->data(ui->listView->model()->index(i,0)).toString();
+       if(comboxText == ListStr)flag = 1; //表示重复项
+    }
+
+    if (flag == 0) //没有重复项， 加载数据
+    {
+        //listview 插入数据
+        int row = ui->listView->currentIndex().row();   //获取当前行
+        if(row == -1)row =0;
+        ui->listView->model()->insertRows(row,1);       //当前行插入一行 row 序号
+        QModelIndex index = ui->listView->model()->index(row,0);
+        ui->listView->model()->setData(index,comboxText); //按索引 修改内容
+
+        //打开文件，读取内容
+        fileName = QCoreApplication::applicationDirPath();
+        fileName = fileName+ "/data/" +comboxText+".xls";
+        qDebug()<< fileName;
+
+//        QByteArray ba = comboxText.toLocal8Bit();  // 文件名存入cur->name toLocal8Bit 支持中文
+//        noteList->cur[comboxIndex]->name = ba.data();  //按combox 序号
+//        noteList->cur[comboxIndex]->row = row;  //listview 行号
+
+        openFile(fileName,noteList->cur[comboxIndex]->noteFeature); //读取数据
+  //  fileName.append();
+    }
 }
 
 //删除 button
 void Widget::on_pushButton_2_clicked()
 {
-    QModelIndex INDEX=ui->listView->currentIndex();
-    qDebug()<<INDEX;
+    QModelIndex index=ui->listView->currentIndex();
+    ui->listView->model()->removeRow(index.row());
 }
 
 
@@ -113,10 +205,12 @@ void Widget::on_radioButton_clicked()
     int select = GroupRadio_2.checkedId();
     switch (select) {
         case -2:
+             fileHead.serialctl = 1;
              qDebug()<< "冠字号开启";
             break;
         case -3:
              qDebug()<< "冠字号关闭";
+            fileHead.serialctl = 0;
             break;
         default:
             break;
@@ -130,9 +224,11 @@ void Widget::on_radioButton_2_clicked()
     switch (select) {
         case -2:
              qDebug()<< "冠字号开启";
+            fileHead.serialctl = 1;
             break;
         case -3:
              qDebug()<< "冠字号关闭";
+            fileHead.serialctl = 0;
             break;
         default:
             break;
@@ -178,7 +274,7 @@ void Widget::on_spinBox_valueChanged(int arg1)
 }
 
 
-void Widget::openFile(QString strFile)
+void Widget::openFile(QString strFile,int * noteFeature)
 {
         QAxObject* excel = new QAxObject("Excel.Application");
         excel->setProperty("Visible", false);
@@ -190,18 +286,29 @@ void Widget::openFile(QString strFile)
         QAxObject* usedrange = worksheet->querySubObject("UsedRange");
         QAxObject* rows = usedrange->querySubObject("Rows");
         QAxObject* columns = usedrange->querySubObject("Columns");
-        int intRowStart = usedrange->property("Row").toInt();
-        int intColStart = usedrange->property("Column").toInt();
-        int intCols = columns->property("Count").toInt();
-        int intRows = rows->property("Count").toInt();
+        int intRowStart = usedrange->property("Row").toInt();  //起始行
+        int intColStart = usedrange->property("Column").toInt(); //起始列
+        int intCols = columns->property("Count").toInt();  //获取列数
+        int intRows = rows->property("Count").toInt();  //获取行数
+
+        //指定行列数
+        int *data;
+        int k=0;
+        data = noteFeature;  //获取noteFeature地址
+        intRows = 10;
+        intCols = 10;
+
         QAxObject * cell;
         for (int i = intRowStart; i < intRowStart + intRows; i++)
         {
             for (int j = intColStart; j < intColStart + intCols; j++)
             {
-                cell = excel->querySubObject("Cells(Int, Int)", i, j );
+                //操作单元格（第i行第j列）
+                cell = excel->querySubObject("Cells(Int, Int)", i, j*2 );
                 QVariant cellValue = cell->dynamicCall("value");
-                qDebug()<< cellValue ;
+                data[k] = cellValue.toInt();
+                qDebug()<< data[k];
+                k++;
             }
         }
         excel->setProperty("DisplayAlerts", 0);
@@ -210,5 +317,77 @@ void Widget::openFile(QString strFile)
         excel->setProperty("DisplayAlerts",1);
 
         delete excel;
-        qDebug() << "100" ;
+
+        qDebug() << "intRowStart" << intRowStart ;
+        qDebug() << "intColStart" << intColStart ;
+        qDebug() << "intRows" << intRows ;
+        qDebug() << "intCols" << intCols ;
+}
+
+//生成打包文件
+void Widget::on_pushButton_3_clicked()
+{
+    int rowCount = ui->listView->model()->rowCount(); // 行数
+    FILE *fd;
+    fileName = QCoreApplication::applicationDirPath();
+    fileName = fileName+ "/data/" +"feature"+".bin";
+    char*  ch;
+    QByteArray ba = fileName.toLatin1();
+    ch=ba.data();
+
+    fd = fopen(ch,"wb");
+    //fseek(fd,offset,SEEK_SET);
+    //fwrite( a, sizeof(a), 1, fd);
+
+    fileHead.num = rowCount;
+    fwrite(&fileHead,sizeof(HEAD),1,fd);  //写头信息
+
+    QVariant data;
+    QString viewText;
+    for (int j = 0; j < rowCount; j++)
+    {
+        data = ui->listView->model()->data(ui->listView->model()->index(j,0)); //取当前行0列数据
+        viewText = data.toString(); //转字符串
+        for (int i = 0; i < 1000; i++)  //减1 为实际行数。
+        {
+            if(viewText == ui->comboBox->itemText(i))
+            {
+                //查询到写文件
+                fseek(fd,512*j+16,SEEK_SET); //头信息16字节，货币信息128字节
+                //noteList->cur[i]->noteFeature
+                noteList->cur[i]->noteFeature[0] = j+1;
+                fwrite(noteList->cur[i]->noteFeature,400,1,fd);  //写货币信息
+                break;
+            }
+        }
+        double bar = (double)j/(double)rowCount*100;
+
+        ui->progressBar->setValue((int)bar);
+
+    }
+    ui->progressBar->setValue(100);
+
+    fclose(fd);  //关闭文件
+
+
+
+    /*//int rowCount = ui->listView->model()->rowCount();
+    fileName = QCoreApplication::applicationDirPath();
+    fileName = fileName+ "/data/" +"feature"+".bin";
+    QFile writeFile(fileName);    //设置文件名
+    writeFile.open(QIODevice::WriteOnly);  //打开文件
+    QDataStream out(&writeFile);
+
+    int j=0;
+    for (int i = 0; i < 100; i++)  //减1 为实际行数。
+    {
+        if(noteList->cur[i]->row < 100)
+        {
+          out.writeRawData((char*)noteList->cur[i]->noteFeature, sizeof(int)*100);
+          j++;
+          qDebug() << j;
+        }
+    }
+    writeFile.close();
+    */
 }

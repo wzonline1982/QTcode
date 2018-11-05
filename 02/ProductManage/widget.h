@@ -9,10 +9,25 @@
 #include <QSqlDatabase>
 #include <QSqlQuery>
 
+struct HEAD{
+    int num;
+    int serialctl;
+};
 
 namespace Ui {
 class Widget;
 }
+
+struct Cur
+{
+    int *noteFeature;
+};
+
+struct NoteList
+{
+    char *listHeader;  //数量
+    Cur *cur[100];
+};
 
 class Widget : public QWidget
 {
@@ -22,10 +37,14 @@ public:
     explicit Widget(QWidget *parent = nullptr);
     ~Widget();
 
+
+    HEAD fileHead;
+    NoteList *noteList;
+    QString fileName;
     QButtonGroup  GroupRadio_2;
     QButtonGroup  GroupRadio_3;
 
-    void openFile(QString strFile);
+    void openFile(QString strFile,int * noteFeature);
 
 private slots:
 
@@ -44,6 +63,8 @@ private slots:
     void on_spinBox_valueChanged(int arg1);
 
     void on_pushButton_2_clicked();
+
+    void on_pushButton_3_clicked();
 
 private:
     Ui::Widget *ui;
