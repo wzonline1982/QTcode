@@ -172,6 +172,19 @@ void Widget::mouseReleaseEvent(QMouseEvent *event)
             //imwrite("pic.bmp",Roil);
             //imshow("roil",Roil); 显示矩形选区
         }
+
+
+//        ui->li
+//        ui->Listv->append( QString("topl is x = %1  y = %2").arg(topl.x).arg(topl.y));
+//        ui->textBrowser->append( QString("topr is x = %1  y = %2").arg(topr.x).arg(topr.y));
+        seriallastPoint = lastPoint; //保存鼠标上一个值
+        serialendPoint = endPoint; //保存鼠标上一个值
+
+        serialcenterPoint.setX( (endPoint.x()-lastPoint.x())/2+lastPoint.x() );
+        serialcenterPoint.setY( (endPoint.y()-lastPoint.y())/2+lastPoint.y() );
+        ui->lineEdit_9->setText(QString(" x = %1  y = %2").arg(lastPoint.x()).arg(lastPoint.y()));
+        ui->lineEdit_10->setText(QString(" x = %1  y = %2").arg(endPoint.x()).arg(endPoint.y()));
+        ui->lineEdit_8->setText(QString(" x = %1  y = %2").arg(serialcenterPoint.x()).arg(serialcenterPoint.y()));
         endPoint.setX(0);
         endPoint.setY(0);
         lastPoint.setX(0);
@@ -846,4 +859,551 @@ Point Widget::getRotatePoint(double angle,Point center,int x ,int y)  //计算�
     }
 
     return top;
+}
+
+
+//定位序列号
+void Widget::on_pushButton_6_clicked()
+{
+    if(!RatRoil.empty()){
+    double angle = ui->lineEdit_3->text().toDouble();
+    Rect rect;
+    rect.x = seriallastPoint.x();
+    rect.y = seriallastPoint.y();
+    rect.width = serialendPoint.x()-seriallastPoint.x();
+    rect.height = serialendPoint.y()-seriallastPoint.y();
+
+
+
+    uchar *data;
+    data =(uchar *)malloc(rect.width*rect.height);
+    Roi_Mat(data,RatRoil, rect);
+    Mat serialp(rect.height, rect.width, CV_8UC1, (unsigned char*)data);
+
+
+
+
+    int thres =ui->lineEdit->text().toInt();
+    int maxval=ui->lineEdit_2->text().toInt();
+    Mat thr;
+    threshold(serialp, thr, thres, maxval, CV_THRESH_BINARY_INV);
+    imshow("serialp",thr);
+
+   //细化
+
+    Mat thrcp(thr.rows,thr.cols,CV_8UC1,thr.data);
+//    zhang_thinimage_improve(thrcp);
+    //cv::Scalar::all(0)
+//    Mat thrcp(thr.rows,thr.cols,CV_8UC1,cv::Scalar::all(0));
+//    imageThin(thr.data, thrcp.data,thr.cols,thr.rows );
+    Mat element = getStructuringElement(MORPH_RECT,Size(2,2));
+    dilate(thrcp,thrcp,element);
+    zhang_thinimage_improve(thrcp);
+    imshow("dst",thrcp);
+
+
+
+    vector<vector<Point> > contours;
+//    CvPoint2D32f rectpoint[4];
+//    CvBox2D rect;
+//    float angle;
+//    int Max=0;
+//    double g_dConArea,temp = 0;
+//    double Max_X=0,Min_X=5000; //Min_X 初始值足够大
+
+    findContours(thr, contours, CV_RETR_EXTERNAL, CV_CHAIN_APPROX_NONE); //找轮廓
+    qDebug() << contours.size() ;
+    double area;
+    for (int i =0; i<contours.size();i++)
+    {
+       CvBox2D rectp;
+       rectp = minAreaRect(Mat(contours[i]));
+       area = contourArea(contours[i]);
+       qDebug()<< rectp.center.x << rectp.angle ;
+    }
+
+    imshow("serialp2",thr);
+
+    }
+}
+
+
+cv::Mat Widget::thinImage(const cv::Mat & src, const int maxIterations)
+{
+    assert(src.type() == CV_8UC1);
+    cv::Mat dst;
+    int width  = src.cols;
+    int height = src.rows;
+    src.copyTo(dst);
+    int count = 0;  //记录迭代次数
+    while (true)
+    {
+        count++;
+        if (maxIterations != -1 && count > maxIterations) //限制次数并且迭代次数到达
+            break;
+        std::vector<uchar *> mFlag; //用于标记需要删除的点
+        //对点标记
+        for (int i = 0; i < height ;++i)
+        {
+            uchar * p = dst.ptr<uchar>(i);
+            for (int j = 0; j < width; ++j)
+            {
+                //如果满足四个条件，进行标记
+                //  p9 p2 p3
+                //  p8 p1 p4
+                //  p7 p6 p5
+                uchar p1 = p[j];
+                if (p1 != 1) continue;
+                uchar p4 = (j == width - 1) ? 0 : *(p + j + 1);
+                uchar p8 = (j == 0) ? 0 : *(p + j - 1);
+                uchar p2 = (i == 0) ? 0 : *(p - dst.step + j);
+                uchar p3 = (i == 0 || j == width - 1) ? 0 : *(p - dst.step + j + 1);
+                uchar p9 = (i == 0 || j == 0) ? 0 : *(p - dst.step + j - 1);
+                uchar p6 = (i == height - 1) ? 0 : *(p + dst.step + j);
+                uchar p5 = (i == height - 1 || j == width - 1) ? 0 : *(p + dst.step + j + 1);
+                uchar p7 = (i == height - 1 || j == 0) ? 0 : *(p + dst.step + j - 1);
+                if ((p2 + p3 + p4 + p5 + p6 + p7 + p8 + p9) >= 2 && (p2 + p3 + p4 + p5 + p6 + p7 + p8 + p9) <= 6)
+                {
+                    int ap = 0;
+                    if (p2 == 0 && p3 == 1) ++ap;
+                    if (p3 == 0 && p4 == 1) ++ap;
+                    if (p4 == 0 && p5 == 1) ++ap;
+                    if (p5 == 0 && p6 == 1) ++ap;
+                    if (p6 == 0 && p7 == 1) ++ap;
+                    if (p7 == 0 && p8 == 1) ++ap;
+                    if (p8 == 0 && p9 == 1) ++ap;
+                    if (p9 == 0 && p2 == 1) ++ap;
+
+                    if (ap == 1 && p2 * p4 * p6 == 0 && p4 * p6 * p8 == 0)
+                    {
+                        //标记
+                        mFlag.push_back(p+j);
+                    }
+                }
+            }
+        }
+
+        //将标记的点删除
+        for (std::vector<uchar *>::iterator i = mFlag.begin(); i != mFlag.end(); ++i)
+        {
+            **i = 0;
+        }
+
+        //直到没有点满足，算法结束
+        if (mFlag.empty())
+        {
+            break;
+        }
+        else
+        {
+            mFlag.clear();//将mFlag清空
+        }
+
+        //对点标记
+        for (int i = 0; i < height; ++i)
+        {
+            uchar * p = dst.ptr<uchar>(i);
+            for (int j = 0; j < width; ++j)
+            {
+                //如果满足四个条件，进行标记
+                //  p9 p2 p3
+                //  p8 p1 p4
+                //  p7 p6 p5
+                uchar p1 = p[j];
+                if (p1 != 1) continue;
+                uchar p4 = (j == width - 1) ? 0 : *(p + j + 1);
+                uchar p8 = (j == 0) ? 0 : *(p + j - 1);
+                uchar p2 = (i == 0) ? 0 : *(p - dst.step + j);
+                uchar p3 = (i == 0 || j == width - 1) ? 0 : *(p - dst.step + j + 1);
+                uchar p9 = (i == 0 || j == 0) ? 0 : *(p - dst.step + j - 1);
+                uchar p6 = (i == height - 1) ? 0 : *(p + dst.step + j);
+                uchar p5 = (i == height - 1 || j == width - 1) ? 0 : *(p + dst.step + j + 1);
+                uchar p7 = (i == height - 1 || j == 0) ? 0 : *(p + dst.step + j - 1);
+
+                if ((p2 + p3 + p4 + p5 + p6 + p7 + p8 + p9) >= 2 && (p2 + p3 + p4 + p5 + p6 + p7 + p8 + p9) <= 6)
+                {
+                    int ap = 0;
+                    if (p2 == 0 && p3 == 1) ++ap;
+                    if (p3 == 0 && p4 == 1) ++ap;
+                    if (p4 == 0 && p5 == 1) ++ap;
+                    if (p5 == 0 && p6 == 1) ++ap;
+                    if (p6 == 0 && p7 == 1) ++ap;
+                    if (p7 == 0 && p8 == 1) ++ap;
+                    if (p8 == 0 && p9 == 1) ++ap;
+                    if (p9 == 0 && p2 == 1) ++ap;
+
+                    if (ap == 1 && p2 * p4 * p8 == 0 && p2 * p6 * p8 == 0)
+                    {
+                        //标记
+                        mFlag.push_back(p+j);
+                    }
+                }
+            }
+        }
+
+        //将标记的点删除
+        for (std::vector<uchar *>::iterator i = mFlag.begin(); i != mFlag.end(); ++i)
+        {
+            **i = 0;
+        }
+
+        //直到没有点满足，算法结束
+        if (mFlag.empty())
+        {
+            break;
+        }
+        else
+        {
+            mFlag.clear();//将mFlag清空
+        }
+    }
+    return dst;
+}
+
+
+void Widget::zhang_thinimage_improve(Mat &srcimage)//单通道、二值化后的图像
+{
+    vector<Point> deletelist1;
+    int Zhangmude[9];
+    int nl = srcimage.rows;
+    int nc = srcimage.cols;
+    while (true)
+    {
+        for (int j = 1; j<(nl - 1); j++)
+        {
+            uchar* data_last = srcimage.ptr<uchar>(j - 1);
+            uchar* data = srcimage.ptr<uchar>(j);
+            uchar* data_next = srcimage.ptr<uchar>(j + 1);
+            for (int i = 1; i<(nc - 1); i++)
+            {
+                if (data[i] == 255)
+                {
+                    Zhangmude[0] = 1;
+                    if (data_last[i] == 255) Zhangmude[1] = 1;
+                    else  Zhangmude[1] = 0;
+                    if (data_last[i + 1] == 255) Zhangmude[2] = 1;
+                    else  Zhangmude[2] = 0;
+                    if (data[i + 1] == 255) Zhangmude[3] = 1;
+                    else  Zhangmude[3] = 0;
+                    if (data_next[i + 1] == 255) Zhangmude[4] = 1;
+                    else  Zhangmude[4] = 0;
+                    if (data_next[i] == 255) Zhangmude[5] = 1;
+                    else  Zhangmude[5] = 0;
+                    if (data_next[i - 1] == 255) Zhangmude[6] = 1;
+                    else  Zhangmude[6] = 0;
+                    if (data[i - 1] == 255) Zhangmude[7] = 1;
+                    else  Zhangmude[7] = 0;
+                    if (data_last[i - 1] == 255) Zhangmude[8] = 1;
+                    else  Zhangmude[8] = 0;
+                    int whitepointtotal = 0;
+                    for (int k = 1; k < 9; k++)
+                    {
+                        //得到1的个数
+                        whitepointtotal = whitepointtotal + Zhangmude[k];
+                    }
+                    if ((whitepointtotal >= 2) && (whitepointtotal <= 6))
+                    {
+                        //得到01的个数
+                        int ap = 0;
+                        if ((Zhangmude[1] == 0) && (Zhangmude[2] == 1)) ap++;
+                        if ((Zhangmude[2] == 0) && (Zhangmude[3] == 1)) ap++;
+                        if ((Zhangmude[3] == 0) && (Zhangmude[4] == 1)) ap++;
+                        if ((Zhangmude[4] == 0) && (Zhangmude[5] == 1)) ap++;
+                        if ((Zhangmude[5] == 0) && (Zhangmude[6] == 1)) ap++;
+                        if ((Zhangmude[6] == 0) && (Zhangmude[7] == 1)) ap++;
+                        if ((Zhangmude[7] == 0) && (Zhangmude[8] == 1)) ap++;
+                        if ((Zhangmude[8] == 0) && (Zhangmude[1] == 1)) ap++;
+            //计算bp
+            int bp=0;
+            bp+=Zhangmude[1];
+            bp+=Zhangmude[2]<<1;
+            bp+=Zhangmude[3]<<2;
+            bp+=Zhangmude[4]<<3;
+            bp+=Zhangmude[5]<<4;
+            bp+=Zhangmude[6]<<5;
+            bp+=Zhangmude[7]<<6;
+            bp+=Zhangmude[8]<<7;
+
+                        if (ap == 1||bp==65||bp==5||bp==20||bp==80||bp==13||bp==22||bp==52||bp==133||bp==141||bp==54)
+                        {
+                            if ((Zhangmude[1] * Zhangmude[7] * Zhangmude[5] == 0) && (Zhangmude[3] * Zhangmude[5] * Zhangmude[7] == 0))
+                            {
+                                deletelist1.push_back(Point(i, j));  //满足条件，去除该点
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        if (deletelist1.size() == 0) break;
+        for (size_t i = 0; i < deletelist1.size(); i++)
+        {
+            Point tem;
+            tem = deletelist1[i];
+            uchar* data = srcimage.ptr<uchar>(tem.y);
+            data[tem.x] = 0;
+        }
+        deletelist1.clear();
+
+
+        for (int j = 1; j<(nl - 1); j++)
+        {
+            uchar* data_last = srcimage.ptr<uchar>(j - 1);
+            uchar* data = srcimage.ptr<uchar>(j);
+            uchar* data_next = srcimage.ptr<uchar>(j + 1);
+            for (int i = 1; i<(nc - 1); i++)
+            {
+                if (data[i] == 255)
+                {
+                    Zhangmude[0] = 1;
+                    if (data_last[i] == 255) Zhangmude[1] = 1;
+                    else  Zhangmude[1] = 0;
+                    if (data_last[i + 1] == 255) Zhangmude[2] = 1;
+                    else  Zhangmude[2] = 0;
+                    if (data[i + 1] == 255) Zhangmude[3] = 1;
+                    else  Zhangmude[3] = 0;
+                    if (data_next[i + 1] == 255) Zhangmude[4] = 1;
+                    else  Zhangmude[4] = 0;
+                    if (data_next[i] == 255) Zhangmude[5] = 1;
+                    else  Zhangmude[5] = 0;
+                    if (data_next[i - 1] == 255) Zhangmude[6] = 1;
+                    else  Zhangmude[6] = 0;
+                    if (data[i - 1] == 255) Zhangmude[7] = 1;
+                    else  Zhangmude[7] = 0;
+                    if (data_last[i - 1] == 255) Zhangmude[8] = 1;
+                    else  Zhangmude[8] = 0;
+                    int whitepointtotal = 0;
+                    for (int k = 1; k < 9; k++)
+                    {
+                        whitepointtotal = whitepointtotal + Zhangmude[k];
+                    }
+                    if ((whitepointtotal >= 2) && (whitepointtotal <= 6))
+                    {
+                        int ap = 0;
+                        if ((Zhangmude[1] == 0) && (Zhangmude[2] == 1)) ap++;
+                        if ((Zhangmude[2] == 0) && (Zhangmude[3] == 1)) ap++;
+                        if ((Zhangmude[3] == 0) && (Zhangmude[4] == 1)) ap++;
+                        if ((Zhangmude[4] == 0) && (Zhangmude[5] == 1)) ap++;
+                        if ((Zhangmude[5] == 0) && (Zhangmude[6] == 1)) ap++;
+                        if ((Zhangmude[6] == 0) && (Zhangmude[7] == 1)) ap++;
+                        if ((Zhangmude[7] == 0) && (Zhangmude[8] == 1)) ap++;
+                        if ((Zhangmude[8] == 0) && (Zhangmude[1] == 1)) ap++;
+            int bp=0;
+            bp+=Zhangmude[1];
+            bp+=Zhangmude[2]<<1;
+            bp+=Zhangmude[3]<<2;
+            bp+=Zhangmude[4]<<3;
+            bp+=Zhangmude[5]<<4;
+            bp+=Zhangmude[6]<<5;
+            bp+=Zhangmude[7]<<6;
+            bp+=Zhangmude[8]<<7;
+                        if (ap == 1||bp==65||bp==5||bp==20||bp==80||bp==13||bp==22||bp==52||bp==133||bp==141||bp==54)
+                        {
+                            if ((Zhangmude[1] * Zhangmude[3] * Zhangmude[5] == 0) && (Zhangmude[3] * Zhangmude[1] * Zhangmude[7] == 0))
+                            {
+                                deletelist1.push_back(Point(i, j));
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        if (deletelist1.size() == 0) break;
+        for (size_t i = 0; i < deletelist1.size(); i++)
+        {
+            Point tem;
+            tem = deletelist1[i];
+            uchar* data = srcimage.ptr<uchar>(tem.y);
+            data[tem.x] = 0;
+        }
+        deletelist1.clear();
+    }
+}
+
+
+/*
+***************指纹图像细化：将指纹部分细化成一条条细线，即一条细线由一个个数据点连接起来***************
+lpBits输入数据指针，g_lpTemp输入数据指针
+*/
+void Widget::imageThin(unsigned char *lpBits, unsigned char *g_lpTemp,int ImageWidth,int ImageHeight )
+{
+    int Width = ImageWidth;
+    int Height = ImageHeight;
+    /////////////////////////////////////////////////////////////////
+    //	lpBits: [in, out] 要细化的图像数据缓冲区
+    //	Width: [in] 要细化的图像宽度
+    //	Height: [in] 要细化的图像高度
+    /////////////////////////////////////////////////////////////////
+    unsigned char  erasetable[256] = {
+        0,0,1,1,0,0,1,1,             1,1,0,1,1,1,0,1,
+        1,1,0,0,1,1,1,1,             0,0,0,0,0,0,0,1,
+        0,0,1,1,0,0,1,1,             1,1,0,1,1,1,0,1,
+        1,1,0,0,1,1,1,1,             0,0,0,0,0,0,0,1,
+        1,1,0,0,1,1,0,0,             0,0,0,0,0,0,0,0,
+        0,0,0,0,0,0,0,0,             0,0,0,0,0,0,0,0,
+        1,1,0,0,1,1,0,0,             1,1,0,1,1,1,0,1,
+        0,0,0,0,0,0,0,0,             0,0,0,0,0,0,0,0,
+        0,0,1,1,0,0,1,1,             1,1,0,1,1,1,0,1,
+        1,1,0,0,1,1,1,1,             0,0,0,0,0,0,0,1,
+        0,0,1,1,0,0,1,1,             1,1,0,1,1,1,0,1,
+        1,1,0,0,1,1,1,1,             0,0,0,0,0,0,0,0,
+        1,1,0,0,1,1,0,0,             0,0,0,0,0,0,0,0,
+        1,1,0,0,1,1,1,1,             0,0,0,0,0,0,0,0,
+        1,1,0,0,1,1,0,0,             1,1,0,1,1,1,0,0,
+        1,1,0,0,1,1,1,0,             1,1,0,0,1,0,0,0
+    };
+    int		x, y;
+    int      num;
+    bool        Finished;
+    unsigned char       nw, n, ne, w, e, sw, s, se;
+    unsigned char       *lpPtr = NULL;
+    unsigned char       *lpTempPtr = NULL;
+
+    memcpy((void *)g_lpTemp, (void *)lpBits, Width*Height);
+
+    //结束标志置成假
+    Finished = FALSE;
+    while (!Finished) { //还没有结束
+                        //结束标志置成假
+        Finished = TRUE;
+        //先进行水平方向的细化
+        for (y = 1; y<Height - 1; y++)
+        { //注意为防止越界，y的范围从1到高度-2
+          //lpPtr指向原图数据，lpTempPtr指向新图数据
+
+            lpPtr = (unsigned char *)lpBits + y*Width;
+            lpTempPtr = (unsigned char *)g_lpTemp + y*Width;
+
+            x = 1; //注意为防止越界，x的范围从1到宽度-2
+
+            while (x<Width - 1)
+            {
+                if (*(lpPtr + x) == 0)
+                { //是黑点才做处理
+                    w = *(lpPtr + x - 1);  //左邻点
+                    e = *(lpPtr + x + 1);  //右邻点
+
+                    if ((w == 255) || (e == 255))
+                    {
+
+                        //如果左右两个邻居中至少有一个是白点才处理
+
+                        nw = *(lpPtr + x + Width - 1); //左上邻点
+
+                        n = *(lpPtr + x + Width); //上邻点
+
+                        ne = *(lpPtr + x + Width + 1); //右上邻点
+
+                        sw = *(lpPtr + x - Width - 1); //左下邻点
+
+                        s = *(lpPtr + x - Width); //下邻点
+
+                        se = *(lpPtr + x - Width + 1); //右下邻点
+
+                                                       //计算索引
+
+                        num = nw / 255 + n / 255 * 2 + ne / 255 * 4 + w / 255 * 8 + e / 255 * 16 +
+                            sw / 255 * 32 + s / 255 * 64 + se / 255 * 128;
+
+                        if (erasetable[num] == 1)
+                        { //经查表，可以删除
+
+                                                    //在原图缓冲区中将该黑点删除
+
+                            *(lpPtr + x) = 255;
+
+                            //结果图中该黑点也删除
+
+                            *(lpTempPtr + x) = 255;
+
+                            Finished = FALSE; //有改动，结束标志置成假
+
+                            x++; //水平方向跳过一个象素
+
+                        }
+
+                    }
+
+                }
+
+                x++; //扫描下一个象素
+
+            }
+
+        }
+
+        //再进行垂直方向的细化
+
+        for (x = 1; x<Width - 1; x++) { //注意为防止越界，x的范围从1到宽度-2
+
+            y = 1; //注意为防止越界，y的范围从1到高度-2
+
+            while (y<Height - 1) {
+
+                lpPtr = lpBits + y*Width;
+
+                lpTempPtr = g_lpTemp + y*Width;
+
+                if (*(lpPtr + x) == 0)
+                { //是黑点才做处理
+
+                    n = *(lpPtr + x + Width);
+
+                    s = *(lpPtr + x - Width);
+
+                    if ((n == 255) || (s == 255))
+                    {
+
+                        //如果上下两个邻居中至少有一个是白点才处理
+
+                        nw = *(lpPtr + x + Width - 1);
+
+                        ne = *(lpPtr + x + Width + 1);
+
+                        w = *(lpPtr + x - 1);
+
+                        e = *(lpPtr + x + 1);
+
+                        sw = *(lpPtr + x - Width - 1);
+
+                        se = *(lpPtr + x - Width + 1);
+
+                        //计算索引
+
+                        num = nw / 255 + n / 255 * 2 + ne / 255 * 4 + w / 255 * 8 + e / 255 * 16 +
+
+                            sw / 255 * 32 + s / 255 * 64 + se / 255 * 128;
+
+                        if (erasetable[num] == 1)
+                        { //经查表，可以删除
+
+                                                    //在原图缓冲区中将该黑点删除
+
+                            *(lpPtr + x) = 255;
+
+                            //结果图中该黑点也删除
+
+                            *(lpTempPtr + x) = 255;
+
+                            Finished = FALSE; //有改动，结束标志置成假
+
+                            y++;//垂直方向跳过一个象素
+
+                        }
+
+                    }
+
+                }
+
+                y++; //扫描下一个象素
+
+            }
+
+        }
+
+    }
+
+    memcpy((void *)lpBits, (void *)g_lpTemp, Width*Height);
+
+    return;
 }

@@ -52,6 +52,10 @@ public:
     void Roi_Mat(uchar* data,Mat src, Rect rect);
     double Correl(double *basedata,double *checkData,int N);
     Point getRotatePoint(double angle,Point center,int x ,int y);
+    Mat thinImage(const cv::Mat & src, const int maxIterations = -1);
+    void zhang_thinimage_improve(Mat &srcimage);
+    void imageThin(unsigned char *lpBits, unsigned char *g_lpTemp,int ImageWidth,int ImageHeight );
+
 
 private:
     Ui::Widget *ui;
@@ -65,6 +69,9 @@ private:
 
     QPoint lastPoint; //保存鼠标上一个值
     QPoint endPoint; //保存鼠标上一个值
+    QPoint seriallastPoint; //保存鼠标上一个值
+    QPoint serialendPoint; //保存鼠标上一个值
+    QPoint serialcenterPoint; //保存鼠标上一个值
 
     QImage *image;
     Mat img;
@@ -80,9 +87,6 @@ private:
 
     QTextBrowser TextBrowser_2;
     QListView    listView;
-
-
-
 
 protected:
     /**********重写事件响应的虚函数****************/
@@ -104,6 +108,8 @@ private slots:
     void on_radioButton_2_clicked(bool checked);
     void on_pushButton_4_clicked();
     void on_pushButton_5_clicked();
+
+    void on_pushButton_6_clicked();
 };
 
 #endif // WIDGET_H
