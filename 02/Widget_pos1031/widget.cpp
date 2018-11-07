@@ -456,7 +456,7 @@ void Widget::on_pushButton_3_clicked()
           topr.y =0;
           for (int i = 0; i < 4;i++)
           {
-              topl.x = topl.x < rectpoint[i].x ? topl.x : rectpoint[i].x;
+              topl.x = topl.x < rectpoint[i].x ? topl.x : rectpoint[i].x; // 小于不成立，就等于后面的数
           }
 
           for (int i = 0; i < 4;i++)
@@ -1406,4 +1406,193 @@ void Widget::imageThin(unsigned char *lpBits, unsigned char *g_lpTemp,int ImageW
     memcpy((void *)lpBits, (void *)g_lpTemp, Width*Height);
 
     return;
+}
+//缩1/4计算轮廓角度
+void Widget::on_pushButton_8_clicked()
+{
+    if(img.empty() == false) // 不是空
+    {
+        int thres =ui->lineEdit->text().toInt(); //取变量
+        int maxval=ui->lineEdit_2->text().toInt();
+
+
+        Mat imgcp;
+        Mat imgcpt;
+        cv::cvtColor(img, imgcpt, CV_RGB2GRAY);
+        cv::resize(imgcpt, imgcp,Size(imgcpt.cols/4,imgcpt.rows/4),0,0,INTER_LINEAR);
+
+        imshow("imgcp",imgcp);
+
+        threshold(imgcp, thr, thres, maxval, CV_THRESH_BINARY);
+
+        vector<vector<Point> > contours;
+        CvPoint2D32f rectpoint[4];
+        CvBox2D rect;
+        float angle;
+        int Max=0;
+        double g_dConArea,temp = 0;
+        double Max_X=0,Min_X=5000; //Min_X 初始值足够大
+
+        findContours(thr, contours, CV_RETR_EXTERNAL, CV_CHAIN_APPROX_NONE); //找轮廓
+
+        if( contours.size() >=2)
+            {
+                //查找最大轮廓
+                    for(vector<Point2f>::size_type i= 0;i < contours.size(); i++)
+                    {
+                        g_dConArea = fabs(contourArea(contours[i], true));
+                        if(temp < g_dConArea)
+                        {
+                            temp = g_dConArea;
+                            Max = i;
+                        }
+                    }
+                    rect =minAreaRect(Mat(contours[Max]));  //最小矩形
+                    cvBoxPoints(rect, rectpoint); //获取4个顶点坐标
+                    //与水平线的角度
+                    angle = rect.angle;
+                     qDebug() << angle;
+                    if(angle < -45)angle=angle+90;
+            }
+            else
+            {
+                    Max =0;
+                    g_dConArea = fabs(contourArea(contours[Max], true));
+                    rect =minAreaRect(Mat(contours[Max]));  //最小矩形
+                    cvBoxPoints(rect, rectpoint); //获取4个顶点坐标
+                    //与水平线的角度
+                    angle = rect.angle;
+                    qDebug() << angle;
+                    if(angle < -45)angle=angle+90;
+            }
+          QString dataAngle = QString("%1").arg(angle);
+          ui->lineEdit_3->setText(dataAngle);
+          ui->textBrowser->append( QString("------------------------------"));
+          ui->textBrowser->append( QString("countersiz  %1").arg(contours.size()));
+          ui->textBrowser->append( QString("angle is %1").arg(angle));
+          ui->textBrowser->append( QString("rect is %1").arg(g_dConArea));
+          ui->textBrowser->append( QString("center is x = %1  y = %2").arg(rect.center.x).arg(rect.center.y));
+          ui->textBrowser->append( QString("Point0 is x = %1  y = %2").arg(rectpoint[0].x).arg(rectpoint[0].y));
+          ui->textBrowser->append( QString("Point1 is x = %1  y = %2").arg(rectpoint[1].x).arg(rectpoint[1].y));
+          ui->textBrowser->append( QString("Point2 is x = %1  y = %2").arg(rectpoint[2].x).arg(rectpoint[2].y));
+          ui->textBrowser->append( QString("Point3 is x = %1  y = %2").arg(rectpoint[3].x).arg(rectpoint[3].y));
+
+          Mat RatationedImg(img.rows, img.cols, CV_8UC1);
+          RatationedImg.setTo(0);
+          Point2f center;
+          center.x= rect.center.x*4;  //中心点
+          center.y= rect.center.y*4;
+
+          Mat M2 = getRotationMatrix2D(center, angle, 1);//计算旋转加缩放的变换矩阵
+          warpAffine(img, RatationedImg, M2, img.size(),1, 0, Scalar(0));//仿射变换
+
+       //   imshow("Rat",RatationedImg); //显示旋转后图片
+
+          // 旋转后的 轮廓
+          Mat RatationedImgcp,graycp;
+          cv::cvtColor(RatationedImg, graycp, CV_RGB2GRAY);
+          threshold(graycp, RatationedImgcp, thres, maxval, CV_THRESH_BINARY);
+
+          vector<vector<Point> > Ratcontours;
+          findContours(RatationedImgcp, Ratcontours, CV_RETR_EXTERNAL, CV_CHAIN_APPROX_NONE); //找轮廓
+
+          temp = 0;
+          if( Ratcontours.size() >=2)
+              {
+                  //查找最大轮廓
+                      for(vector<Point2f>::size_type i= 0;i < Ratcontours.size(); i++)
+                      {
+                        /*  temp = fabs(contourArea(Ratcontours[i], true));
+                          g_dConArea = fabs(contourArea(Ratcontours[i+1], true));
+                          Max = temp > g_dConArea ? i: (i+1);
+                          */
+                          g_dConArea = fabs(contourArea(Ratcontours[i], true));
+                          if(temp < g_dConArea)
+                          {
+                              temp = g_dConArea;
+                              Max = i;
+                          }
+                      }
+                      rect =minAreaRect(Mat(Ratcontours[Max]));  //最小矩形
+                      cvBoxPoints(rect, rectpoint); //获取4个顶点坐标
+                      //与水平线的角度
+                      angle = rect.angle;
+                      if(angle < -45)angle=angle+90;
+
+              }
+              else
+              {
+                      Max =0;
+                      g_dConArea = fabs(contourArea(Ratcontours[Max], true));
+                      rect =minAreaRect(Mat(Ratcontours[Max]));  //最小矩形
+                      cvBoxPoints(rect, rectpoint); //获取4个顶点坐标
+                      //与水平线的角度
+                      angle = rect.angle;
+                      if(angle < -45)angle=angle+90;
+              }
+
+          ui->textBrowser->append( QString("angle is %1").arg(angle));
+          ui->textBrowser->append( QString("rect is %1").arg(g_dConArea));
+          ui->textBrowser->append( QString("center is x = %1  y = %2").arg(rect.center.x).arg(rect.center.y));
+          ui->textBrowser->append( QString("Point0 is x = %1  y = %2").arg(rectpoint[0].x).arg(rectpoint[0].y));
+          ui->textBrowser->append( QString("Point1 is x = %1  y = %2").arg(rectpoint[1].x).arg(rectpoint[1].y));
+          ui->textBrowser->append( QString("Point2 is x = %1  y = %2").arg(rectpoint[2].x).arg(rectpoint[2].y));
+          ui->textBrowser->append( QString("Point3 is x = %1  y = %2").arg(rectpoint[3].x).arg(rectpoint[3].y));
+
+
+
+          topl.x =800;
+          topl.y =800;
+          topr.x =0;
+          topr.y =0;
+          for (int i = 0; i < 4;i++)
+          {
+              topl.x = topl.x < rectpoint[i].x ? topl.x : rectpoint[i].x;
+          }
+
+          for (int i = 0; i < 4;i++)
+          {
+              topl.y = topl.y < rectpoint[i].y ? topl.y : rectpoint[i].y;
+          }
+          for (int i = 0; i < 4;i++)
+          {
+              topr.x = topr.x > rectpoint[i].x ? topr.x : rectpoint[i].x;
+          }
+
+          for (int i = 0; i < 4;i++)
+          {
+              topr.y = topr.y > rectpoint[i].y ? topr.y : rectpoint[i].y;
+          }
+          QString Width = QString("%1").arg(topr.x-topl.x); //计算宽度
+          ui->lineEdit_4->setText(Width);
+          QString Height = QString("%1").arg(topr.y-topl.y);//计算高度
+          ui->lineEdit_5->setText(Height);
+
+          ui->textBrowser->append( QString("topl is x = %1  y = %2").arg(topl.x).arg(topl.y));
+          ui->textBrowser->append( QString("topr is x = %1  y = %2").arg(topr.x).arg(topr.y));
+
+//     //     imshow("graycp",graycp);  //旋转后灰度图
+//          uchar * data;
+//          Rect rect5((int)topl.x,(int)topl.y, (int)topr.x-(int)topl.x, (int)(topr.y-topl.y)/4*4); //左上角座标 ， 宽度， 高度。
+//        // Rect rect5(0,0, 360, 149);
+//          data=(uchar *)malloc(rect5.width*rect5.height*3);
+
+//          Roi_Mat(data,graycp,rect5);
+//          Mat Roil(rect5.height, rect5.width, CV_8UC1, (unsigned char*)data);
+//          RatRoil = Roil; //浅考贝
+
+//          imshow("warpAffine",Roil);
+
+//       //QImage::Format_Indexed8 QImage::Format_RGB888 QImage::Format_RGB32
+//        (*image)=QImage((const unsigned char*)(Roil.data),Roil.cols,Roil.rows,Roil.step,QImage::Format_Indexed8);
+
+////        (*image)=QImage((const unsigned char*)(Roil.data),Roil.cols,Roil.rows,QImage::Format_RGB888);
+////        tempPix = QPixmap::fromImage(*image);  //image转pixmap
+////        paintEventPix = tempPix.copy(0,0,tempPix.width(),tempPix.height());  //考贝图片
+//        isDraw = 4;
+//        update();            //触发画图
+
+//        ui->radioButton_2->setEnabled(true);
+//        ui->radioButton_2->setChecked(true);
+     }
 }
