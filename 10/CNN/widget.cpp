@@ -190,13 +190,9 @@ OutLayer* Widget::initOutLayer(int inputNum,int outputNum)
 void Widget::on_pushButton_3_clicked()
 {
 
-  //  nSize inputSize={testImg->ImgPtr[0].c,testImg->ImgPtr[0].r};
-    //int outSize=testLabel->LabelPtr[0].l;
-    nSize inputSize={5,5};
-    int outSize=8;
     // CNN结构的初始化
     cnn=(CNN*)malloc(sizeof(CNN));
-    cnnsetup(cnn,inputSize,outSize);
+    cnnsetup(cnn,inputSize,outSize);  //输入 28*28，输出 10
 
     //打印信息
     ui->textBrowser->append( QString("CNN初始化完成！ "));
@@ -208,10 +204,10 @@ void Widget::on_pushButton_4_clicked()
     opts.numepochs=1;
     opts.alpha= ui->lineEdit_alpha->text().toFloat();
     int trainNum=ui->lineEdit_trainNum->text().toInt();
-//    cnntrain(cnn,trainImg,trainLabel,opts,trainNum);
+    cnntrain(cnn,trainImg,trainLabel,opts,trainNum);
 
     //打印信息
-    ui->textBrowser->append( QString("CNN初始化完成！ "));
+ //   ui->textBrowser->append( QString("CNN初始化完成！ "));
 }
 
 
@@ -541,6 +537,40 @@ void Widget::cnnclear(CNN* cnn)
     }
 }
 
+void Widget::cnntrain(CNN* cnn,	ImgArr inputData,LabelArr outputData,CNNOpts opts,int trainNum)
+{
+    // 学习训练误差曲线
+    cnn->L=(float*)malloc(trainNum*sizeof(float));
+    int e;
+    for(e=0;e<opts.numepochs;e++){
+        int n=0;
+        for(n=0;n<trainNum;n++){
+            //printf("%d\n",n);
+            qDebug() << n;
+            cnnff(cnn,inputData->ImgPtr[n].ImgData);  // 前向传播，这里主要计算各
+            cnnbp(cnn,outputData->LabelPtr[n].LabelData); // 后向传播，这里主要计算各神经元的误差梯度
+
+
+       //     char* filedir="E:\\Code\\Matlab\\PicTrans\\CNNData\\";
+       //     const char* filename=combine_strings(filedir,combine_strings(intTochar(n),".cnn"));
+      //      savecnndata(cnn,filename,inputData->ImgPtr[n].ImgData);
+            cnnapplygrads(cnn,opts,inputData->ImgPtr[n].ImgData); // 更新权重
+
+            cnnclear(cnn);
+            // 计算并保存误差能量
+            float l=0.0;
+            int i;
+            for(i=0;i<cnn->O5->outputNum;i++)
+                l=l+cnn->e[i]*cnn->e[i];
+            if(n==0)
+                cnn->L[n]=l/(float)2.0;
+            else
+                cnn->L[n]=cnn->L[n-1]*0.99+0.01*l/(float)2.0;
+
+            ui->textBrowser->append(QString("训练次数 %1 ,误差 %2 ").arg(n).arg(cnn->L[n]));
+        }
+    }
+}
 
 /**************************************/
 /**************************************/
@@ -824,6 +854,7 @@ ImgArr Widget::read_Img(const char* filename) // 读入图像
     }
 
     fclose(fp);
+
     return imgarr;
 }
 
@@ -864,4 +895,100 @@ LabelArr Widget::read_Lable(const char* filename)// 读入图像
 
     fclose(fp);
     return labarr;
+}
+
+void Widget::on_pushButton_2_clicked()
+{
+    char*  ch;
+    QDir dir = QCoreApplication::applicationDirPath()+"/data/";   //当前程序路径
+    dir.setFilter(QDir::Files | QDir::Hidden | QDir::NoSymLinks);
+              dir.setSorting(QDir::Size | QDir::Reversed);
+
+    QFileInfoList list = dir.entryInfoList();
+    for (int i = 0; i < list.size(); ++i) {
+      QFileInfo fileInfo = list.at(i);
+      if(fileInfo.fileName() == "train-labels.idx1-ubyte")
+      {
+         QByteArray ba = fileInfo.filePath().toLatin1();
+         ch=ba.data();
+         trainLabel=read_Lable(ba.data());
+       qDebug()<<"train-labels.idx1-ubyte";
+      }
+      if(fileInfo.fileName() == "train-images.idx3-ubyte")
+      {
+         QByteArray ba = fileInfo.filePath().toLatin1();
+         ch=ba.data();
+         trainImg=read_Img(ba.data());
+       qDebug()<<"train-images.idx3-ubyte";
+      }
+      if(fileInfo.fileName() == "t10k-labels.idx1-ubyte")
+      {
+         QByteArray ba = fileInfo.filePath().toLatin1();
+         ch=ba.data();
+         testLabel=read_Lable(ba.data());
+       qDebug()<<"t10k-labels.idx1-ubyte";
+      }
+      if(fileInfo.fileName() == "t10k-images.idx3-ubyte")
+      {
+         QByteArray ba = fileInfo.filePath().toLatin1();
+         ch=ba.data();
+         testImg=read_Img(ba.data());
+         qDebug()<<"t10k-images.idx3-ubyte";
+      }
+          //qDebug() << qPrintable(QString("%1 %2").arg(fileInfo.size(), 10).arg(fileInfo.fileName()));
+          //qDebug()<<fileInfo.fileName();
+    }
+
+//    LabelArr trainLabel=read_Lable("E:\\Code\\VS2010 code\\CNN\\Minst\\train-labels.idx1-ubyte");
+//    ImgArr trainImg=read_Img("E:\\Code\\VS2010 code\\CNN\\Minst\\train-images.idx3-ubyte");
+//    LabelArr testLabel=read_Lable("E:\\Code\\VS2010 code\\CNN\\Minst\\test-labels.idx1-ubyte");
+//    ImgArr testImg=read_Img("E:\\Code\\VS2010 code\\CNN\\Minst\\test-images.idx3-ubyte");
+
+       inputSize={testImg->ImgPtr[0].c,testImg->ImgPtr[0].r};
+       outSize=testLabel->LabelPtr[0].l;
+
+       ui->textBrowser->append("获取训练数据 和 测试数据！");
+       ui->textBrowser->append(QString("训练数据 cols= %1 rows=%2 ; label = %3 ！").arg(testImg->ImgPtr[0].c).arg(testImg->ImgPtr[0].r).arg(testLabel->LabelPtr[0].l));
+}
+
+
+
+
+
+
+
+int Widget::vecmaxIndex(float* vec, int veclength)// 返回向量最大数的序号
+{
+    int i;
+    float maxnum=-1.0;
+    int maxIndex=0;
+    for(i=0;i<veclength;i++){
+        if(maxnum<vec[i]){
+            maxnum=vec[i];
+            maxIndex=i;
+        }
+    }
+    return maxIndex;
+}
+
+// 测试cnn函数
+float Widget::cnntest(CNN* cnn, ImgArr inputData,LabelArr outputData,int testNum)
+{
+    int n=0;
+    int incorrectnum=0;  //错误预测的数目
+    for(n=0;n<testNum;n++){
+        cnnff(cnn,inputData->ImgPtr[n].ImgData);
+        if(vecmaxIndex(cnn->O5->y,cnn->O5->outputNum)!=vecmaxIndex(outputData->LabelPtr[n].LabelData,cnn->O5->outputNum))
+            incorrectnum++;
+        cnnclear(cnn);
+    }
+    return (float)incorrectnum/(float)testNum;
+}
+
+void Widget::on_pushButton_5_clicked()
+{
+    int testNum=10;
+    float incorrectRatio=0.0;
+    incorrectRatio=cnntest(cnn,testImg,testLabel,testNum);
+    ui->textBrowser->append(QString("测试数据错误率  %1 ！").arg(incorrectRatio));
 }

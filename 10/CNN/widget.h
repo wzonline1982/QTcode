@@ -168,7 +168,7 @@ public:
     void cnnbp(CNN* cnn,float* outputData);
     void cnnapplygrads(CNN* cnn,CNNOpts opts,float** inputData); // 更新权重
     void cnnclear(CNN* cnn);  //drop out 清除部份数据
-
+    void cnntrain(CNN* cnn,	ImgArr inputData,LabelArr outputData,CNNOpts opts,int trainNum);
 
 
     //mat 函数
@@ -189,6 +189,10 @@ public:
     char* intTochar(int i);
 
 
+    //测试函数
+    int vecmaxIndex(float* vec, int veclength);// 返回向量最大数的序号
+    float cnntest(CNN* cnn, ImgArr inputData,LabelArr outputData,int testNum);
+
     //Minst 数据集操作
     int ReverseInt(int i);
     LabelArr read_Lable(const char* filename); // 读入图像标记
@@ -203,10 +207,22 @@ private slots:
 
     void on_pushButton_4_clicked();
 
+    void on_pushButton_2_clicked();
+
+    void on_pushButton_5_clicked();
+
 private:
     Ui::Widget *ui;
 
     CNN* cnn;
+
+    LabelArr trainLabel;
+    ImgArr trainImg;
+    LabelArr testLabel;
+    ImgArr testImg;
+
+    nSize inputSize;
+    int outSize;
 
 };
 
