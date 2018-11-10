@@ -5,6 +5,7 @@
 #include <QWidget>
 #include <QFileDialog>
 #include <QDir>
+#include <mythread.h>
 
 
 #include <stdio.h>
@@ -211,6 +212,10 @@ private slots:
 
     void on_pushButton_5_clicked();
 
+    void on_pushButton_6_clicked();
+
+    void on_pushButton_7_clicked();
+
 private:
     Ui::Widget *ui;
 
@@ -223,6 +228,8 @@ private:
 
     nSize inputSize;
     int outSize;
+
+    MyThread *thread;
 
 };
 
