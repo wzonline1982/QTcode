@@ -16,7 +16,7 @@ Widget::Widget(QWidget *parent) :
     nSize inputSize={8,8};
     int outSize=8;
 
-    dnn = new DCNN;
+    dnn = new DCNN; //新建类
     //创建子线程
     thread = new QThread(this);
     //把自定义线程加入到子线程中
@@ -106,10 +106,11 @@ void Widget::on_pushButton_init_clicked()
 
     //启动线程，但是没有启动线程处理函数
     thread->start();
-    dnn->setFlag(false);
+//    dnn->setFlag(false);
     emit startThread();
 }
 
+//关闭线程
 void Widget::on_pushButton_clicked()
 {
     dnn->setFlag(true);
@@ -117,9 +118,37 @@ void Widget::on_pushButton_clicked()
     thread->wait();
 }
 
+//关闭窗口结束线程
 void Widget::dealClose()
 {
     dnn->setFlag(true);
     thread->quit(); //等待线程结束关闭
     thread->wait();
+}
+
+//训练CNN
+void Widget::on_pushButton_2_clicked()
+{
+//    if(thread->isRunning() == true)
+//    {
+//       return;
+//    }
+
+    dnn->setModel(CNNTRAIN);  //设置CNN运行代码段
+
+//    //启动线程，但是没有启动线程处理函数
+//    thread->start();
+    dnn->setFlag(false);   //只在训练的循环内使用
+    emit startThread();
+}
+
+//测试运行
+void Widget::on_pushButton_3_clicked()
+{
+    dnn->setModel(CNNTEST);  //设置CNN运行代码段
+
+    //启动线程，但是没有启动线程处理函数
+//  thread->start();
+//    dnn->setFlag(false);
+    emit startThread();  //启动运行函数
 }

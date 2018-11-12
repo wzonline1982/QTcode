@@ -273,13 +273,14 @@ void DCNN::cnntrain(CNN* cnn,	ImgArr inputData,LabelArr outputData,CNNOpts opts,
         int n=0;
         for(n=0;n<trainNum;n++){
             //printf("%d\n",n);
+       //     qDebug() << n;
             cnnff(cnn,inputData->ImgPtr[n].ImgData);  // 前向传播，这里主要计算各
             cnnbp(cnn,outputData->LabelPtr[n].LabelData); // 后向传播，这里主要计算各神经元的误差梯度
 
 
-//            char filedir[]="E:\\Code\\Matlab\\PicTrans\\CNNData\\";
-//            const char* filename=combine_strings(filedir,combine_strings(intTochar(n),".cnn"));
-//            savecnndata(cnn,filename,inputData->ImgPtr[n].ImgData);
+       //     char* filedir="E:\\Code\\Matlab\\PicTrans\\CNNData\\";
+       //     const char* filename=combine_strings(filedir,combine_strings(intTochar(n),".cnn"));
+      //      savecnndata(cnn,filename,inputData->ImgPtr[n].ImgData);
             cnnapplygrads(cnn,opts,inputData->ImgPtr[n].ImgData); // 更新权重
 
             cnnclear(cnn);
@@ -292,6 +293,9 @@ void DCNN::cnntrain(CNN* cnn,	ImgArr inputData,LabelArr outputData,CNNOpts opts,
                 cnn->L[n]=l/(float)2.0;
             else
                 cnn->L[n]=cnn->L[n-1]*0.99+0.01*l/(float)2.0;
+
+            qDebug() << n <<  cnn->L[n];
+            if(isStop == true)break; //结束线程标志
         }
     }
 }
@@ -1072,10 +1076,10 @@ void DCNN::setFlag(bool flag)
     isStop = flag;
 }
 
-void DCNN::setInputSize(nSize inputSize)
+void DCNN::setInputSize(nSize input)
 {
-   inputSize.c = inputSize.c;
-   inputSize.r = inputSize.r;
+   inputSize.c = input.c;
+   inputSize.r = input.r;
 }
 
 void DCNN::setOutSize(int outsize)
@@ -1091,13 +1095,10 @@ void DCNN::setModel(int model)
 void DCNN::DCNNThread()
 {
 
-    while(isStop == false)
-    {
       //  QThread::sleep(1);
         //QMessageBox::aboutQt(NULL);
 
         switch (MODEL) {
-
         case CNNINIT:
             if(MODEL == CNNINIT){
                 cnn=(CNN*)malloc(sizeof(CNN));
@@ -1105,16 +1106,42 @@ void DCNN::DCNNThread()
                 setInputSize(input);
                 setOutSize(testLabel->LabelPtr[0].l);
                 cnnsetup(cnn,inputSize,outSize);
-                qDebug() << "初始化CNN" << QThread::currentThread();
+
+                opts.numepochs=1;
+                opts.alpha=1.0;
+                trainNum=1000;
+
+                qDebug() << inputSize.c << inputSize.r << outSize;
+                qDebug() << "初始化CNN" << testImg->ImgPtr[0].c <<testLabel->LabelPtr[0].l<<
+                          opts.numepochs<< opts.alpha << trainNum << QThread::currentThread();
              }
             break;
-        default:
+         case CNNTRAIN:
+                if(MODEL == CNNTRAIN)
+                { qDebug() << "训练CNN";
+                   cnntrain(cnn,trainImg,trainLabel,opts,trainNum);
+                  //   cnntrain(cnn,testImg,testLabel,opts,trainNum);
+                }
             break;
+         case CNNTEST:
+            if(CNNTEST == MODEL)
+            {
+                int testNum=1000;
+                float incorrectRatio=0.0;
+                incorrectRatio=cnntest(cnn,testImg,testLabel,testNum);
+                qDebug()<< "错误率 " <<incorrectRatio;
+            }
+         case CNNDATA:
+            if(CNNDATA == MODEL)
+            {
+
+
+            }
+                break;
+           default:
+                break;
         }
 
         emit mySignal();
-        isStop = true;
-        qDebug() << "子线程号：" << QThread::currentThread();
-
-    }
+        qDebug() << "子线程函数运行结束" ;
 }

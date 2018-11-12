@@ -42,7 +42,7 @@
   <widget class="QPushButton" name="pushButton">
    <property name="geometry">
     <rect>
-     <x>370</x>
+     <x>400</x>
      <y>30</y>
      <width>75</width>
      <height>23</height>
@@ -50,6 +50,32 @@
    </property>
    <property name="text">
     <string>关闭CNN</string>
+   </property>
+  </widget>
+  <widget class="QPushButton" name="pushButton_2">
+   <property name="geometry">
+    <rect>
+     <x>230</x>
+     <y>30</y>
+     <width>75</width>
+     <height>23</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string>训练CNN</string>
+   </property>
+  </widget>
+  <widget class="QPushButton" name="pushButton_3">
+   <property name="geometry">
+    <rect>
+     <x>320</x>
+     <y>30</y>
+     <width>75</width>
+     <height>23</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string>testCNN</string>
    </property>
   </widget>
  </widget>

@@ -549,7 +549,7 @@ void Widget::cnntrain(CNN* cnn,	ImgArr inputData,LabelArr outputData,CNNOpts opt
         int n=0;
         for(n=0;n<trainNum;n++){
             //printf("%d\n",n);
-            qDebug() << n;
+       //     qDebug() << n;
             cnnff(cnn,inputData->ImgPtr[n].ImgData);  // 前向传播，这里主要计算各
             cnnbp(cnn,outputData->LabelPtr[n].LabelData); // 后向传播，这里主要计算各神经元的误差梯度
 
@@ -569,7 +569,7 @@ void Widget::cnntrain(CNN* cnn,	ImgArr inputData,LabelArr outputData,CNNOpts opt
                 cnn->L[n]=l/(float)2.0;
             else
                 cnn->L[n]=cnn->L[n-1]*0.99+0.01*l/(float)2.0;
-
+            qDebug() << n <<  cnn->L[n];
             ui->textBrowser->append(QString("训练次数 %1 ,误差 %2 ").arg(n).arg(cnn->L[n]));
         }
     }

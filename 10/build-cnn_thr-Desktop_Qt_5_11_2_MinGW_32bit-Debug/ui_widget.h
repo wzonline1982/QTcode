@@ -22,6 +22,8 @@ public:
     QPushButton *pushButton_read;
     QPushButton *pushButton_init;
     QPushButton *pushButton;
+    QPushButton *pushButton_2;
+    QPushButton *pushButton_3;
 
     void setupUi(QWidget *Widget)
     {
@@ -36,7 +38,13 @@ public:
         pushButton_init->setGeometry(QRect(140, 30, 75, 23));
         pushButton = new QPushButton(Widget);
         pushButton->setObjectName(QStringLiteral("pushButton"));
-        pushButton->setGeometry(QRect(370, 30, 75, 23));
+        pushButton->setGeometry(QRect(400, 30, 75, 23));
+        pushButton_2 = new QPushButton(Widget);
+        pushButton_2->setObjectName(QStringLiteral("pushButton_2"));
+        pushButton_2->setGeometry(QRect(230, 30, 75, 23));
+        pushButton_3 = new QPushButton(Widget);
+        pushButton_3->setObjectName(QStringLiteral("pushButton_3"));
+        pushButton_3->setGeometry(QRect(320, 30, 75, 23));
 
         retranslateUi(Widget);
 
@@ -49,6 +57,8 @@ public:
         pushButton_read->setText(QApplication::translate("Widget", "\350\257\273\345\217\226Minst", nullptr));
         pushButton_init->setText(QApplication::translate("Widget", "\345\210\235\345\247\213\345\214\226CNN", nullptr));
         pushButton->setText(QApplication::translate("Widget", "\345\205\263\351\227\255CNN", nullptr));
+        pushButton_2->setText(QApplication::translate("Widget", "\350\256\255\347\273\203CNN", nullptr));
+        pushButton_3->setText(QApplication::translate("Widget", "testCNN", nullptr));
     } // retranslateUi
 
 };

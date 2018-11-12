@@ -11,14 +11,20 @@
 #include <assert.h>
 
 #include <QObject>
+#include <QWidget>
 #include <QThread>
+#include <QDir>
+#include <QApplication>
 #include <QDebug>
 
 #define full 0
 #define same 1
 #define _valid 2
 
-#define CNNINIT  1
+#define CNNINIT   1
+#define CNNTRAIN  2
+#define CNNTEST   3
+#define CNNDATA   4
 
 
 
