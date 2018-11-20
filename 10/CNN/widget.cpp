@@ -7,6 +7,9 @@ Widget::Widget(QWidget *parent) :
 {
     ui->setupUi(this);
 
+    //分配空间
+    thread = new MyThread(this);
+
 }
 
 Widget::~Widget()
@@ -546,7 +549,7 @@ void Widget::cnntrain(CNN* cnn,	ImgArr inputData,LabelArr outputData,CNNOpts opt
         int n=0;
         for(n=0;n<trainNum;n++){
             //printf("%d\n",n);
-            qDebug() << n;
+       //     qDebug() << n;
             cnnff(cnn,inputData->ImgPtr[n].ImgData);  // 前向传播，这里主要计算各
             cnnbp(cnn,outputData->LabelPtr[n].LabelData); // 后向传播，这里主要计算各神经元的误差梯度
 
@@ -566,7 +569,7 @@ void Widget::cnntrain(CNN* cnn,	ImgArr inputData,LabelArr outputData,CNNOpts opt
                 cnn->L[n]=l/(float)2.0;
             else
                 cnn->L[n]=cnn->L[n-1]*0.99+0.01*l/(float)2.0;
-
+            qDebug() << n <<  cnn->L[n];
             ui->textBrowser->append(QString("训练次数 %1 ,误差 %2 ").arg(n).arg(cnn->L[n]));
         }
     }
@@ -987,8 +990,87 @@ float Widget::cnntest(CNN* cnn, ImgArr inputData,LabelArr outputData,int testNum
 
 void Widget::on_pushButton_5_clicked()
 {
-    int testNum=10;
+    int testNum=10000;
     float incorrectRatio=0.0;
     incorrectRatio=cnntest(cnn,testImg,testLabel,testNum);
     ui->textBrowser->append(QString("测试数据错误率  %1 ！").arg(incorrectRatio));
+}
+
+void Widget::on_pushButton_6_clicked()
+{
+
+        char *filename="cnn.bin";
+        FILE  *fp=NULL;
+        fp=fopen(filename,"wb");
+        if(fp==NULL)
+            printf("write file failed\n");
+
+        int i,j,r;
+        // C1的数据
+        for(i=0;i<cnn->C1->inChannels;i++)
+            for(j=0;j<cnn->C1->outChannels;j++)
+                for(r=0;r<cnn->C1->mapSize;r++)
+                    fwrite(cnn->C1->mapData[i][j][r],sizeof(float),cnn->C1->mapSize,fp);
+
+        fwrite(cnn->C1->basicData,sizeof(float),cnn->C1->outChannels,fp);
+
+        // C3网络
+        for(i=0;i<cnn->C3->inChannels;i++)
+            for(j=0;j<cnn->C3->outChannels;j++)
+                for(r=0;r<cnn->C3->mapSize;r++)
+                    fwrite(cnn->C3->mapData[i][j][r],sizeof(float),cnn->C3->mapSize,fp);
+
+        fwrite(cnn->C3->basicData,sizeof(float),cnn->C3->outChannels,fp);
+
+        // O5输出层
+        for(i=0;i<cnn->O5->outputNum;i++)
+            fwrite(cnn->O5->wData[i],sizeof(float),cnn->O5->inputNum,fp);
+        fwrite(cnn->O5->basicData,sizeof(float),cnn->O5->outputNum,fp);
+
+        fclose(fp);
+    ui->textBrowser->append(QString("保存网络 ！"));
+}
+
+void Widget::on_pushButton_7_clicked()
+{
+    char *filename="cnn.bin";
+    FILE  *fp=NULL;
+    fp=fopen(filename,"rb");
+    if(fp==NULL)
+        printf("write file failed\n");
+
+    int i,j,c,r;
+    // C1的数据
+    for(i=0;i<cnn->C1->inChannels;i++)
+        for(j=0;j<cnn->C1->outChannels;j++)
+            for(r=0;r<cnn->C1->mapSize;r++)
+                for(c=0;c<cnn->C1->mapSize;c++){
+                    float* in=(float*)malloc(sizeof(float));
+                    fread(in,sizeof(float),1,fp);
+                    cnn->C1->mapData[i][j][r][c]=*in;
+                }
+
+    for(i=0;i<cnn->C1->outChannels;i++)
+        fread(&cnn->C1->basicData[i],sizeof(float),1,fp);
+
+    // C3网络
+    for(i=0;i<cnn->C3->inChannels;i++)
+        for(j=0;j<cnn->C3->outChannels;j++)
+            for(r=0;r<cnn->C3->mapSize;r++)
+                for(c=0;c<cnn->C3->mapSize;c++)
+                fread(&cnn->C3->mapData[i][j][r][c],sizeof(float),1,fp);
+
+    for(i=0;i<cnn->C3->outChannels;i++)
+        fread(&cnn->C3->basicData[i],sizeof(float),1,fp);
+
+    // O5输出层
+    for(i=0;i<cnn->O5->outputNum;i++)
+        for(j=0;j<cnn->O5->inputNum;j++)
+            fread(&cnn->O5->wData[i][j],sizeof(float),1,fp);
+
+    for(i=0;i<cnn->O5->outputNum;i++)
+        fread(&cnn->O5->basicData[i],sizeof(float),1,fp);
+
+    fclose(fp);
+    ui->textBrowser->append(QString("读取网络 ！"));
 }

@@ -881,13 +881,12 @@ void Widget::on_pushButton_6_clicked()
     Mat serialp(rect.height, rect.width, CV_8UC1, (unsigned char*)data);
 
 
-
-
     int thres =ui->lineEdit->text().toInt();
     int maxval=ui->lineEdit_2->text().toInt();
     Mat thr;
     threshold(serialp, thr, thres, maxval, CV_THRESH_BINARY_INV);
     imshow("serialp",thr);
+
 
    //细化
 
@@ -896,8 +895,8 @@ void Widget::on_pushButton_6_clicked()
     //cv::Scalar::all(0)
 //    Mat thrcp(thr.rows,thr.cols,CV_8UC1,cv::Scalar::all(0));
 //    imageThin(thr.data, thrcp.data,thr.cols,thr.rows );
-    Mat element = getStructuringElement(MORPH_RECT,Size(2,2));
-    dilate(thrcp,thrcp,element);
+//    Mat element = getStructuringElement(MORPH_RECT,Size(2,2));
+//    dilate(thrcp,thrcp,element);
     zhang_thinimage_improve(thrcp);
     imshow("dst",thrcp);
 
