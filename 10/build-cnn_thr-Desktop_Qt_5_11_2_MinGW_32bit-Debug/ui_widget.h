@@ -12,6 +12,7 @@
 #include <QtCore/QVariant>
 #include <QtWidgets/QApplication>
 #include <QtWidgets/QPushButton>
+#include <QtWidgets/QTextBrowser>
 #include <QtWidgets/QWidget>
 
 QT_BEGIN_NAMESPACE
@@ -24,6 +25,9 @@ public:
     QPushButton *pushButton;
     QPushButton *pushButton_2;
     QPushButton *pushButton_3;
+    QPushButton *pushButton_4;
+    QPushButton *pushButton_5;
+    QTextBrowser *textBrowser;
 
     void setupUi(QWidget *Widget)
     {
@@ -38,13 +42,22 @@ public:
         pushButton_init->setGeometry(QRect(140, 30, 75, 23));
         pushButton = new QPushButton(Widget);
         pushButton->setObjectName(QStringLiteral("pushButton"));
-        pushButton->setGeometry(QRect(400, 30, 75, 23));
+        pushButton->setGeometry(QRect(600, 30, 75, 23));
         pushButton_2 = new QPushButton(Widget);
         pushButton_2->setObjectName(QStringLiteral("pushButton_2"));
         pushButton_2->setGeometry(QRect(230, 30, 75, 23));
         pushButton_3 = new QPushButton(Widget);
         pushButton_3->setObjectName(QStringLiteral("pushButton_3"));
         pushButton_3->setGeometry(QRect(320, 30, 75, 23));
+        pushButton_4 = new QPushButton(Widget);
+        pushButton_4->setObjectName(QStringLiteral("pushButton_4"));
+        pushButton_4->setGeometry(QRect(410, 30, 75, 23));
+        pushButton_5 = new QPushButton(Widget);
+        pushButton_5->setObjectName(QStringLiteral("pushButton_5"));
+        pushButton_5->setGeometry(QRect(510, 30, 75, 23));
+        textBrowser = new QTextBrowser(Widget);
+        textBrowser->setObjectName(QStringLiteral("textBrowser"));
+        textBrowser->setGeometry(QRect(30, 140, 471, 261));
 
         retranslateUi(Widget);
 
@@ -59,6 +72,8 @@ public:
         pushButton->setText(QApplication::translate("Widget", "\345\205\263\351\227\255CNN", nullptr));
         pushButton_2->setText(QApplication::translate("Widget", "\350\256\255\347\273\203CNN", nullptr));
         pushButton_3->setText(QApplication::translate("Widget", "testCNN", nullptr));
+        pushButton_4->setText(QApplication::translate("Widget", "savecnn", nullptr));
+        pushButton_5->setText(QApplication::translate("Widget", "loadcnn", nullptr));
     } // retranslateUi
 
 };

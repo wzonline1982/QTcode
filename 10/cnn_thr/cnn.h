@@ -25,6 +25,8 @@
 #define CNNTRAIN  2
 #define CNNTEST   3
 #define CNNDATA   4
+#define SAVECNN   5
+#define LOADCNN   6
 
 
 
@@ -241,7 +243,7 @@ public:
     void show();
 
 signals:
-    void mySignal();
+    void mySignal(int,double);
 
 public slots:
 

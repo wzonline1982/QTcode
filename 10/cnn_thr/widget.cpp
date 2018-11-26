@@ -22,6 +22,7 @@ Widget::Widget(QWidget *parent) :
     //把自定义线程加入到子线程中
     dnn->moveToThread(thread);
 
+    void(DCNN::*mySignal)(int,double) = &DCNN::mySignal;  //重载函数转化，函数指针
     connect(dnn, &DCNN::mySignal, this, &Widget::dealSignal);
 
     qDebug() << "主线程号：" << QThread::currentThread();
@@ -41,9 +42,44 @@ Widget::Widget(QWidget *parent) :
 }
 
 
-void Widget::dealSignal()
+void Widget::dealSignal(int n,double m )
 {
+    switch (dnn->MODEL) {
+    case CNNINIT:
+        if(dnn->MODEL == CNNINIT)
+        {
 
+        }
+        break;
+     case CNNTRAIN:
+        if(dnn->MODEL == CNNTRAIN)
+        {
+            ui->textBrowser->append(QString("训练次数 %1 ,误差 %2 ").arg(n).arg(m));
+            qDebug()<< n << m;
+        }
+        break;
+     case CNNTEST:
+        if(CNNTEST == dnn->MODEL)
+        {
+           if(n == 0) ui->textBrowser->append(QString("错误率  %1 ").arg(m));
+           else ui->textBrowser->append(QString("test  %1% ").arg(m));
+            qDebug()<< n << m;
+        }
+     case SAVECNN:
+        if(SAVECNN == dnn->MODEL)
+        {
+             ui->textBrowser->append(QString("savecnn !"));
+        }
+            break;
+    case LOADCNN:
+        if(LOADCNN == dnn->MODEL)
+        {
+            ui->textBrowser->append(QString("loadcnn !"));
+        }
+        break;
+       default:
+            break;
+    }
 }
 
 Widget::~Widget()
@@ -146,6 +182,28 @@ void Widget::on_pushButton_2_clicked()
 void Widget::on_pushButton_3_clicked()
 {
     dnn->setModel(CNNTEST);  //设置CNN运行代码段
+
+    //启动线程，但是没有启动线程处理函数
+//  thread->start();
+//    dnn->setFlag(false);
+    emit startThread();  //启动运行函数
+}
+
+void Widget::on_pushButton_4_clicked()
+{
+    dnn->setModel(SAVECNN);  //设置CNN运行代码段
+
+    //启动线程，但是没有启动线程处理函数
+//  thread->start();
+//    dnn->setFlag(false);
+    emit startThread();  //启动运行函数
+}
+
+
+
+void Widget::on_pushButton_5_clicked()
+{
+    dnn->setModel(LOADCNN);  //设置CNN运行代码段
 
     //启动线程，但是没有启动线程处理函数
 //  thread->start();
