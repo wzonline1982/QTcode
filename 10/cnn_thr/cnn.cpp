@@ -17,7 +17,7 @@ void DCNN::cnnsetup(CNN* cnn,nSize inputSize,int outputSize)
     int mapSize=5;
     inSize.c=inputSize.c;
     inSize.r=inputSize.r;
-    cnn->C1=initCovLayer(inSize.c,inSize.r,5,1,6);
+    cnn->C1=initCovLayer(inSize.c,inSize.r,5,1,6);  // 5   1  6
     inSize.c=inSize.c-mapSize+1;
     inSize.r=inSize.r-mapSize+1;
     cnn->S2=initPoolLayer(inSize.c,inSize.r,2,6,6,AvePool);
@@ -185,6 +185,7 @@ float DCNN::cnntest(CNN* cnn, ImgArr inputData,LabelArr outputData,int testNum)
         if(vecmaxIndex(cnn->O5->y,cnn->O5->outputNum)!=vecmaxIndex(outputData->LabelPtr[n].LabelData,cnn->O5->outputNum))
             incorrectnum++;
         cnnclear(cnn);
+        if(n%1000 == 0)emit mySignal(1,n/100);
     }
     return (float)incorrectnum/(float)testNum;
 }
@@ -295,6 +296,7 @@ void DCNN::cnntrain(CNN* cnn,	ImgArr inputData,LabelArr outputData,CNNOpts opts,
                 cnn->L[n]=cnn->L[n-1]*0.99+0.01*l/(float)2.0;
 
             qDebug() << n <<  cnn->L[n];
+            emit mySignal(n, cnn->L[n]);
             if(isStop == true)break; //结束线程标志
         }
     }
@@ -1109,7 +1111,7 @@ void DCNN::DCNNThread()
 
                 opts.numepochs=1;
                 opts.alpha=1.0;
-                trainNum=1000;
+                trainNum=50000;
 
                 qDebug() << inputSize.c << inputSize.r << outSize;
                 qDebug() << "初始化CNN" << testImg->ImgPtr[0].c <<testLabel->LabelPtr[0].l<<
@@ -1118,7 +1120,7 @@ void DCNN::DCNNThread()
             break;
          case CNNTRAIN:
                 if(MODEL == CNNTRAIN)
-                { qDebug() << "训练CNN";
+                {
                    cnntrain(cnn,trainImg,trainLabel,opts,trainNum);
                   //   cnntrain(cnn,testImg,testLabel,opts,trainNum);
                 }
@@ -1126,22 +1128,97 @@ void DCNN::DCNNThread()
          case CNNTEST:
             if(CNNTEST == MODEL)
             {
-                int testNum=1000;
+                int testNum=10000;
                 float incorrectRatio=0.0;
-                incorrectRatio=cnntest(cnn,testImg,testLabel,testNum);
-                qDebug()<< "错误率 " <<incorrectRatio;
+                incorrectRatio=cnntest(cnn,trainImg,trainLabel,testNum);
+               // qDebug()<< "错误率 " <<incorrectRatio;
+                emit mySignal(0,incorrectRatio);
             }
-         case CNNDATA:
-            if(CNNDATA == MODEL)
+         case SAVECNN:
+            if(SAVECNN == MODEL)
             {
+                char *filename="cnn.bin";
+                FILE  *fp=NULL;
+                fp=fopen(filename,"wb");
+                if(fp==NULL)
+                    printf("write file failed\n");
 
+                int i,j,r;
+                // C1的数据
+                for(i=0;i<cnn->C1->inChannels;i++)
+                    for(j=0;j<cnn->C1->outChannels;j++)
+                        for(r=0;r<cnn->C1->mapSize;r++)
+                            fwrite(cnn->C1->mapData[i][j][r],sizeof(float),cnn->C1->mapSize,fp);
+
+                fwrite(cnn->C1->basicData,sizeof(float),cnn->C1->outChannels,fp);
+
+                // C3网络
+                for(i=0;i<cnn->C3->inChannels;i++)
+                    for(j=0;j<cnn->C3->outChannels;j++)
+                        for(r=0;r<cnn->C3->mapSize;r++)
+                            fwrite(cnn->C3->mapData[i][j][r],sizeof(float),cnn->C3->mapSize,fp);
+
+                fwrite(cnn->C3->basicData,sizeof(float),cnn->C3->outChannels,fp);
+
+                // O5输出层
+                for(i=0;i<cnn->O5->outputNum;i++)
+                    fwrite(cnn->O5->wData[i],sizeof(float),cnn->O5->inputNum,fp);
+                fwrite(cnn->O5->basicData,sizeof(float),cnn->O5->outputNum,fp);
+
+                fclose(fp);
+                emit mySignal(0,0);
 
             }
                 break;
+
+        case LOADCNN:
+            if(LOADCNN == MODEL)
+            {
+                char *filename="cnn.bin";
+                FILE  *fp=NULL;
+                fp=fopen(filename,"rb");
+                if(fp==NULL)
+                    printf("write file failed\n");
+
+                int i,j,c,r;
+                // C1的数据
+                for(i=0;i<cnn->C1->inChannels;i++)
+                    for(j=0;j<cnn->C1->outChannels;j++)
+                        for(r=0;r<cnn->C1->mapSize;r++)
+                            for(c=0;c<cnn->C1->mapSize;c++){
+                                float* in=(float*)malloc(sizeof(float));
+                                fread(in,sizeof(float),1,fp);
+                                cnn->C1->mapData[i][j][r][c]=*in;
+                            }
+
+                for(i=0;i<cnn->C1->outChannels;i++)
+                    fread(&cnn->C1->basicData[i],sizeof(float),1,fp);
+
+                // C3网络
+                for(i=0;i<cnn->C3->inChannels;i++)
+                    for(j=0;j<cnn->C3->outChannels;j++)
+                        for(r=0;r<cnn->C3->mapSize;r++)
+                            for(c=0;c<cnn->C3->mapSize;c++)
+                            fread(&cnn->C3->mapData[i][j][r][c],sizeof(float),1,fp);
+
+                for(i=0;i<cnn->C3->outChannels;i++)
+                    fread(&cnn->C3->basicData[i],sizeof(float),1,fp);
+
+                // O5输出层
+                for(i=0;i<cnn->O5->outputNum;i++)
+                    for(j=0;j<cnn->O5->inputNum;j++)
+                        fread(&cnn->O5->wData[i][j],sizeof(float),1,fp);
+
+                for(i=0;i<cnn->O5->outputNum;i++)
+                    fread(&cnn->O5->basicData[i],sizeof(float),1,fp);
+
+                fclose(fp);
+                emit mySignal(0,0);
+            }
+            break;
            default:
                 break;
         }
 
-        emit mySignal();
         qDebug() << "子线程函数运行结束" ;
 }
