@@ -8,6 +8,15 @@
 #include <QFileDialog>
 #include <QSqlDatabase>
 #include <QSqlQuery>
+#include <assert.h>
+#include <map>
+
+#include <vector>
+#include <string>
+#include <stdio.h>
+#include <iostream>
+
+using namespace std;
 
 struct HEAD{
     int num;
@@ -44,7 +53,11 @@ public:
     QButtonGroup  GroupRadio_2;
     QButtonGroup  GroupRadio_3;
 
+    void openFileCSV(QString strFile,int * noteFeature);
     void openFile(QString strFile,int * noteFeature);
+
+    wchar_t * char2wchar(const char* cchar);
+
 
 private slots:
 

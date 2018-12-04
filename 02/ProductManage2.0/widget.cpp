@@ -9,10 +9,10 @@
 #include <stdlib.h>
 #include <stdio.h>
 
+#include <windows.h>
 #include <iostream>
-//#include <cstring>
+#include <cstring>
 #include <string>
-
 #include <QDebug>
 
 
@@ -30,7 +30,7 @@ Widget::Widget(QWidget *parent) :
     QFileInfoList list = dir.entryInfoList();
     for (int i = 0; i < list.size(); ++i) {
         QFileInfo fileInfo = list.at(i);
-        if(fileInfo.suffix() == "xls")  //筛选后缀为xls的文件导入combox
+        if(fileInfo.suffix() == "xls" )  //筛选后缀为xls的文件导入combox fileInfo.suffix() == "xls" || ||fileInfo.suffix() == "csv"
         {
            ui->comboBox->addItem(fileInfo.baseName());
         }
@@ -67,9 +67,9 @@ Widget::Widget(QWidget *parent) :
     //ui->comboBox->setMaxCount(icom);
     ui->comboBox->addItem("G");
 */
- //   openFile("E:/qt_work/build-ProductManage-Desktop_Qt_5_11_2_MinGW_32bit-Debug/123.xls");
-    //fileName = QCoreApplication::applicationDirPath();
-   // fileName = fileName+ "/data/" +"123"+".xls";
+//    openFile("E:/qt_work/build-ProductManage-Desktop_Qt_5_11_2_MinGW_32bit-Debug/123.xls");
+//    fileName = QCoreApplication::applicationDirPath();
+//    fileName = fileName+ "/data/" +"123"+".xls";
 
     //初始化 listview
     QStringList num;
@@ -79,15 +79,15 @@ Widget::Widget(QWidget *parent) :
     ui->listView->setEditTriggers(QAbstractItemView::NoEditTriggers);//设置不可编缉
 
     /* listview 数据操作示例*/
-  //  qDebug()<< "打印初始化行数量" << ui->listView->model()->rowCount();
-    // row_idx为该行索引序号, column_idx为该列索引序号,两者都以0开始
-    //----------------------------------row_idx -- column_idx
- //   qDebug()<<"打印选定内容区域" << ui->listView->model()->index(1, 0).data().toString();
- //  ui->listView->model()->removeRow(1.0);  //删除row.col 先行再列 0 起始
- //   ui->listView->model()->insertRow(0);
- //   ui->listView->model()->setData(ui->listView->model()->index(0,0),"33333333");
+//   qDebug()<< "打印初始化行数量" << ui->listView->model()->rowCount();
+//   row_idx为该行索引序号, column_idx为该列索引序号,两者都以0开始
+//    ----------------------------------row_idx -- column_idx
+//   qDebug()<<"打印选定内容区域" << ui->listView->model()->index(1, 0).data().toString();
+//   ui->listView->model()->removeRow(1.0);  //删除row.col 先行再列 0 起始
+//   ui->listView->model()->insertRow(0);
+//   ui->listView->model()->setData(ui->listView->model()->index(0,0),"33333333");
 //   QVariant data = ui->listView->model()->data(ui->listView->model()->index(0,0));
- //   qDebug() << data.toInt() ;
+//   qDebug() << data.toInt() ;
 
     //---------------------------------------
 
@@ -138,8 +138,8 @@ void Widget::on_listView_clicked(const QModelIndex &index)
       }
 
 //    QModelIndex INDEX=ui->listView->currentIndex();
- //   qDebug()<<INDEX;
- //   ui->listView->model()->removeRow();
+//    qDebug()<<INDEX;
+//    ui->listView->model()->removeRow();
 //    model->insertRows(c_rowlistview-1,1)；//插入一行
 //    model->removeRow(c_rowlistview+1);//删除一行
 //    model->setData((model->index(c_rowlistview-1,0)),model->index(c_rowlistview+1,0).data().toString())//赋值，注意index（）第二个参数设置成0，否则赋值不成功
@@ -171,23 +171,25 @@ void Widget::on_pushButton_clicked()
     if (flag == 0) //没有重复项， 加载数据
     {
         //listview 插入数据
-        int row = ui->listView->currentIndex().row();   //获取当前行
-        if(row == -1)row =0;
-        ui->listView->model()->insertRows(row,1);       //当前行插入一行 row 序号
-        QModelIndex index = ui->listView->model()->index(row,0);
+//        int row = ui->listView->currentIndex().row();   //获取当前行
+//        if(row == -1)row =0;
+        ui->listView->model()->insertRows(rowCount,1);       //当前行插入一行 row 序号
+        QModelIndex index = ui->listView->model()->index(rowCount,0);
         ui->listView->model()->setData(index,comboxText); //按索引 修改内容
 
         //打开文件，读取内容
         fileName = QCoreApplication::applicationDirPath();
         fileName = fileName+ "/data/" +comboxText+".xls";
-        qDebug()<< fileName;
+//        qDebug()<< fileName;
 
 //        QByteArray ba = comboxText.toLocal8Bit();  // 文件名存入cur->name toLocal8Bit 支持中文
 //        noteList->cur[comboxIndex]->name = ba.data();  //按combox 序号
 //        noteList->cur[comboxIndex]->row = row;  //listview 行号
-
+        //方式1
         openFile(fileName,noteList->cur[comboxIndex]->noteFeature); //读取数据
-  //  fileName.append();
+        //方式2
+//      openFileCSV(fileName,noteList->cur[comboxIndex]->noteFeature);
+//      fileName.append();
     }
 }
 
@@ -342,6 +344,113 @@ void Widget::openFile(QString strFile,int * noteFeature)
         qDebug() << "intCols" << intCols ;
 }
 
+void Widget::openFileCSV(QString strFile,int * noteFeature)
+{
+    FILE *fp = NULL;
+    char *line,*record,*filename;
+    char buffer[1024];
+
+    wchar_t szBuf[1024];  //QString 路径 转 wchar_t
+    wcscpy_s(reinterpret_cast<wchar_t*>(szBuf),
+        sizeof(szBuf) / sizeof(wchar_t),
+        reinterpret_cast<const wchar_t*>(strFile.utf16()));
+
+//    QByteArray arr = strFile.toUtf8(); //中文转码
+//    string str = arr.data();
+//    const char* fileNameP = str.data();
+
+////    QByteArray ba = strFile.toLatin1(); // Qstring转char
+////    filename=ba.data();
+//    const wchar_t* strL =char2wchar(fileNameP);
+    qDebug() << strFile;
+    int *data;
+    int k = 0;
+    data = noteFeature;  //获取noteFeature地址
+
+    if((fp = _wfopen( szBuf,L"r")) != NULL)  //如果含中文要用 _wfopen 打开文件
+    {
+            qDebug()<< "读取";
+            fseek(fp, 0, SEEK_SET);  //定位到第二行，每个英文字符大小为1
+            char delims[] = ",";
+            char *result = NULL;
+            int j = 0,i = 0;
+
+            // fgets 读取一行以 \n 结束
+            while ((line = fgets(buffer, sizeof(buffer), fp))!=NULL)//当没有读取到文件末尾时循环继续
+            {
+                record = strtok(line, ","); //取份隔符前的数据
+                while (record != NULL)//读取每一行的数据
+                {
+//                   QString strg = QString::fromLocal8Bit(record);
+//                   qDebug()<< strg.toInt()  << j;
+                    //**** 保存数据
+                    if(j%2 == 1)  //取奇数位
+                    {
+                        QString strg = QString::fromLocal8Bit(record);
+                        qDebug()<< strg.toInt() << j;
+
+                        QByteArray ba = strg.toLatin1();
+                        char *c_str2 = ba.data();
+
+                        if(*c_str2>='0' && *c_str2<='9') //判断是数字还是字母
+                        {
+                            *(data+k) = strg.toInt();
+                        }
+                        else
+                        {
+                            *(data+k) = *c_str2;
+                        }
+                        //打印 noteFeature
+                      //  qDebug()<< *(noteFeature+k) ;
+                        k++;
+                    }
+                    //****
+                    record = strtok(NULL, ",");
+                    j++;
+                    if (j >= 20)break;  //只需读取前20列
+                }
+                j = 0;
+                i++;
+                qDebug()<< "行数" << i ;
+                if(i >= 10)break;  //读取10行，结束
+            }
+
+            //行例变换
+            int *temp;
+            temp =(int*) calloc(100,sizeof(int));
+            for (int i=0;i<100;i++)
+            {
+                *(temp+i) = *(noteFeature+i);
+          //      qDebug()<< *(temp+i) ;
+            }
+
+            char* tempc = (char*) temp;
+            char* tempnote = (char*) noteFeature;
+            for (int a =0;a<10;a++)
+            {
+                for (int b =0;b<10;b++)
+                {
+                   // *(noteFeature+a*10+b) = *(temp+a+b*10);
+                    *(tempnote+a*40+b*4)   = *(tempc+a*4+b*40);
+                    *(tempnote+a*40+b*4+1) = *(tempc+a*4+b*40+1);
+                    *(tempnote+a*40+b*4+2) = *(tempc+a*4+b*40+2);
+                    *(tempnote+a*40+b*4+3) = *(tempc+a*4+b*40+3);
+                }
+            }
+
+            //打印测试
+            for (int i=0;i<100;i++)
+            {
+                qDebug()<< *(noteFeature+i) ;
+            }
+
+            fclose(fp);
+            fp = NULL;
+    }
+}
+
+
+
 //生成打包文件
 void Widget::on_pushButton_3_clicked()
 {
@@ -387,8 +496,6 @@ void Widget::on_pushButton_3_clicked()
 
     fclose(fd);  //关闭文件
 
-
-
     /*//int rowCount = ui->listView->model()->rowCount();
     fileName = QCoreApplication::applicationDirPath();
     fileName = fileName+ "/data/" +"feature"+".bin";
@@ -409,3 +516,16 @@ void Widget::on_pushButton_3_clicked()
     writeFile.close();
     */
 }
+
+
+wchar_t * Widget::char2wchar(const char* cchar)
+{
+    wchar_t *m_wchar;
+    int len = MultiByteToWideChar( CP_ACP ,0,cchar ,strlen( cchar), NULL,0);
+    m_wchar= new wchar_t[len+1];
+    MultiByteToWideChar( CP_ACP ,0,cchar,strlen( cchar),m_wchar,len);
+    m_wchar[len]= '\0' ;
+    return m_wchar;
+}
+
+

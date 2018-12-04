@@ -30,6 +30,11 @@
      <height>281</height>
     </rect>
    </property>
+   <property name="font">
+    <font>
+     <pointsize>16</pointsize>
+    </font>
+   </property>
   </widget>
   <widget class="QPushButton" name="pushButton">
    <property name="geometry">
@@ -200,9 +205,9 @@
   <widget class="QComboBox" name="comboBox">
    <property name="geometry">
     <rect>
-     <x>30</x>
+     <x>10</x>
      <y>60</y>
-     <width>231</width>
+     <width>251</width>
      <height>31</height>
     </rect>
    </property>
