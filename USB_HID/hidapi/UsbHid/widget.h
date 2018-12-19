@@ -9,6 +9,9 @@
 #include <stdlib.h>
 #include "hidapi.h"
 
+#include <windows.h>
+#include <stdio.h>
+
 namespace Ui {
 class Widget;
 }

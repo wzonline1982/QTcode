@@ -6,9 +6,17 @@ CONFIG -= qt
 SOURCES += \
         main.c
 
+HEADERS += \
+    hidapi.h
 
 LIBS += -L$$_PRO_FILE_PWD_/LIB/ \
             -lhidapi
 
-HEADERS += \
-    hidapi.h
+#win32 {
+
+#LIBS += -lhid -lsetupapi
+
+#}
+
+
+

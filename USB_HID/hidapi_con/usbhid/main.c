@@ -6,7 +6,7 @@
 #include <wchar.h>
 #include <string.h>
 
-
+#pragma comment(lib, "hidapi.lib")
 
 #define MAX_STR 255
 
@@ -19,10 +19,10 @@ int main(int argc, char* argv[])
     int i;
     struct hid_device_info *devs, *cur_dev;
 
+    printf("hid_init device\n");
+
     if (hid_init())
             return -1;
-
-    printf(" 运行中\n");
 
     devs = hid_enumerate(0x0, 0x0);
     cur_dev = devs;
@@ -40,49 +40,127 @@ int main(int argc, char* argv[])
 
     // Open the device using the VID, PID,
     // and optionally the Serial number.
-//      handle = hid_open(cur_dev->vendor_id, cur_dev->product_id, NULL);
-      handle = hid_open(0x46d,0xc31c, NULL);
+      handle = hid_open(0x0434,0x5750, NULL);
       if (!handle) {
           printf("unable to open device\n");
-          getchar();
           return 1;
       }
-//    // Read the Manufacturer String
- //     res = hid_get_manufacturer_string(handle, wstr, MAX_STR);
-//      wprintf(L"Manufacturer String: %s\n", wstr);
 
-//    // Read the Product String
-//    res = hid_get_product_string(handle, wstr, MAX_STR);
-//    wprintf(L"Product String: %s\n", wstr);
+      // Read the Manufacturer String
+      wstr[0] = 0x0000;
+      res = hid_get_manufacturer_string(handle, wstr, MAX_STR);
+      if (res < 0)
+          printf("Unable to read manufacturer string\n");
+      printf("Manufacturer String: %ls\n", wstr);
 
-//    // Read the Serial Number String
-//    res = hid_get_serial_number_string(handle, wstr, MAX_STR);
-//    wprintf(L"Serial Number String: (%d) %s\n", wstr[0], wstr);
+      // Read the Product String
+      wstr[0] = 0x0000;
+      res = hid_get_product_string(handle, wstr, MAX_STR);
+      if (res < 0)
+          printf("Unable to read product string\n");
+      printf("Product String: %ls\n", wstr);
 
-//    // Read Indexed String 1
-//    res = hid_get_indexed_string(handle, 1, wstr, MAX_STR);
-//    wprintf(L"Indexed String 1: %s\n", wstr);
 
-//    // Toggle LED (cmd 0x80). The first byte is the report number (0x0).
-//    buf[0] = 0x0;
-//    buf[1] = 0x80;
-//    res = hid_write(handle, buf, 65);
+      // Read the Serial Number String
+      wstr[0] = 0x0000;
+      res = hid_get_serial_number_string(handle, wstr, MAX_STR);
+      if (res < 0)
+          printf("Unable to read serial number string\n");
+      printf("Serial Number String: (%d) %ls", wstr[0], wstr);
+      printf("\n");
 
-//    // Request state (cmd 0x81). The first byte is the report number (0x0).
-//    buf[0] = 0x0;
-//    buf[1] = 0x81;
-//    res = hid_write(handle, buf, 65);
+      // Read Indexed String 1
+      wstr[0] = 0x0000;
+      res = hid_get_indexed_string(handle, 1, wstr, MAX_STR);
+      if (res < 0)
+          printf("Unable to read indexed string 1\n");
+      printf("Indexed String 1: %ls\n", wstr);
 
-//    // Read requested state
-//    hid_read(handle, buf, 65);
+      // Set the hid_read() function to be non-blocking.
+      hid_set_nonblocking(handle, 1);
 
-//    // Print out the returned buffer.
-//    for (i = 0; i < 4; i++)
-//        printf("buf[%d]: %d\n", i, buf[i]);
+      // Try to read from the device. There shoud be no
+      // data here, but execution should not block.
+      res = hid_read(handle, buf, 17);
 
-    printf(" 运行结束\n");
+      // Send a Feature Report to the device
+      buf[0] = 0x2;
+      buf[1] = 0xa0;
+      buf[2] = 0x0a;
+      buf[3] = 0x00;
+      buf[4] = 0x00;
+      res = hid_send_feature_report(handle, buf, 17);
+      if (res < 0) {
+          printf("Unable to send a feature report.\n");
+      }
 
-//    Sleep(5000);
+      memset(buf,0,sizeof(buf));
+
+      // Read a Feature Report from the device
+      buf[0] = 0x2;
+      res = hid_get_feature_report(handle, buf, sizeof(buf));
+      if (res < 0) {
+          printf("Unable to get a feature report.\n");
+          printf("%ls", hid_error(handle));
+      }
+      else {
+          // Print out the returned buffer.
+          printf("Feature Report\n   ");
+          for (i = 0; i < res; i++)
+              printf("%02hhx ", buf[i]);
+          printf("\n");
+      }
+
+      memset(buf,0,sizeof(buf));
+
+      // Toggle LED (cmd 0x80). The first byte is the report number (0x1).
+      buf[0] = 0x1;
+      buf[1] = 0x80;
+      res = hid_write(handle, buf, 17);
+      if (res < 0) {
+          printf("Unable to write()\n");
+          printf("Error: %ls\n", hid_error(handle));
+      }
+
+
+      // Request state (cmd 0x81). The first byte is the report number (0x1).
+      buf[0] = 0x1;
+      buf[1] = 0x81;
+      hid_write(handle, buf, 17);
+      if (res < 0)
+          printf("Unable to write() (2)\n");
+
+      // Read requested state. hid_read() has been set to be
+      // non-blocking by the call to hid_set_nonblocking() above.
+      // This loop demonstrates the non-blocking nature of hid_read().
+      res = 0;
+      while (res == 0) {
+          res = hid_read(handle, buf, sizeof(buf));
+          if (res == 0)
+              printf("waiting...\n");
+          if (res < 0)
+              printf("Unable to read()\n");
+          #ifdef WIN32
+          Sleep(500);
+          #else
+          usleep(500*1000);
+          #endif
+      }
+
+      printf("Data read:\n   ");
+      // Print out the returned buffer.
+      for (i = 0; i < res; i++)
+          printf("%02hhx ", buf[i]);
+      printf("\n");
+
+      hid_close(handle);
+
+      /* Free static HIDAPI objects. */
+      hid_exit();
+
+    printf(" running\n");
+
+//  Sleep(5000);
     getchar();
     return 0;
 }

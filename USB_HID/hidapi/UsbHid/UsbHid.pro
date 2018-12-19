@@ -37,6 +37,10 @@ HEADERS += \
 FORMS += \
         widget.ui
 
+
+LIBS += -L$$_PRO_FILE_PWD_/LIB/ \
+            -lhidapi
+
 # Default rules for deployment.
 qnx: target.path = /tmp/$${TARGET}/bin
 else: unix:!android: target.path = /opt/$${TARGET}/bin

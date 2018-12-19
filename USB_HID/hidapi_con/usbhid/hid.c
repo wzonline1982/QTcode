@@ -282,17 +282,23 @@ struct hid_device_info HID_API_EXPORT * HID_API_CALL hid_enumerate(unsigned shor
 	int device_index = 0;
 	int i;
 
+ //   HidD_GetHidGuid(&InterfaceClassGuid);
+
 	if (hid_init() < 0)
 		return NULL;
 
 	/* Initialize the Windows objects. */
 	memset(&devinfo_data, 0x0, sizeof(devinfo_data));
-	devinfo_data.cbSize = sizeof(SP_DEVINFO_DATA);
-	device_interface_data.cbSize = sizeof(SP_DEVICE_INTERFACE_DATA);
+
+    devinfo_data.cbSize = sizeof(SP_DEVINFO_DATA);
+    device_interface_data.cbSize = sizeof(SP_DEVICE_INTERFACE_DATA);
+
 
 	/* Get information for all the devices belonging to the HID class. */
 	device_info_set = SetupDiGetClassDevsA(&InterfaceClassGuid, NULL, NULL, DIGCF_PRESENT | DIGCF_DEVICEINTERFACE);
 	
+
+
 	/* Iterate over each device in the HID class, looking for the right one. */
 	
 	for (;;) {
@@ -351,7 +357,9 @@ struct hid_device_info HID_API_EXPORT * HID_API_CALL hid_enumerate(unsigned shor
 			   when there are no more interfaces left. */
 			res = SetupDiEnumDeviceInfo(device_info_set, i, &devinfo_data);
 			if (!res)
+            {
 				goto cont;
+            }
 
 			res = SetupDiGetDeviceRegistryPropertyA(device_info_set, &devinfo_data,
 			               SPDRP_CLASS, NULL, (PBYTE)driver_name, sizeof(driver_name), NULL);
